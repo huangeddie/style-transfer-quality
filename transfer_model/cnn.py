@@ -4,31 +4,20 @@ from torch import nn
 
 
 class Normalization(nn.Module):
-    def __init__(self):
+    def __init__(self, device):
         super(Normalization, self).__init__()
         mean = torch.tensor([0.485, 0.456, 0.406], requires_grad=False)
         std = torch.tensor([0.229, 0.224, 0.225], requires_grad=False)
-        self.mean = mean.view(-1, 1, 1)
-        self.std = std.view(-1, 1, 1)
+        self.mean = mean.to(device).view(-1, 1, 1)
+        self.std = std.to(device).view(-1, 1, 1)
 
     def forward(self, img):
         # normalize img
         return (img - self.mean) / self.std
 
 
-def get_identity_conv():
-    identity = nn.Conv2d(3, 3, 1, bias=False)
-    identity.weight.requires_grad = False
-    identity.weight.data.fill_(0)
-    channels = torch.arange(3)
-    identity.weight.data[channels, channels, 0] = 1
-    identity = nn.Sequential(identity)
-    return identity
-
-
 def get_layers(args):
-    norm = Normalization().to(args.device)
-    identity = get_identity_conv().to(args.device)
+    norm = Normalization(args.device)
 
     # Get CNN and parse it's layers
     if args.cnn == 'vgg19-bn':

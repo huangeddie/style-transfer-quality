@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-from transfer_model import layers
+from transfer_model import layers, kernels
 
 
 class TransferModel(nn.Module):
@@ -20,7 +20,7 @@ class TransferModel(nn.Module):
                 main.append(layers.StyleLayerDisc(cnn_layer, style_feat.shape[1],
                                                   sample_size))
             else:
-                kernel = kernel_map[distance]
+                kernel = kernels.kernel_map[distance]
                 assert sample_size is not None
                 main.append(layers.StyleLayerKernel(cnn_layer, style_feat, kernel,
                                                     sample_size))
