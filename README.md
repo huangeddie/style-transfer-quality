@@ -2,6 +2,10 @@
 Performs style transfer by defining the style loss as the Wasserstein distance between the distribution of the the style image features and the generated image features.
 
 # Paper
+Huang, Eddie and Sahil Gupta. “Style is a Distribution of Features.” (2020).
+
+[Arxiv](https://arxiv.org/abs/2007.13010)
+
 If you find this code useful in your research, please consider citing:
 ```
 @article{huang2020style,
@@ -11,7 +15,3 @@ If you find this code useful in your research, please consider citing:
   year={2020}
 }
 ```
-
-Huang, Eddie and Sahil Gupta. “Style is a Distribution of Features.” (2020).
-
-[Arxiv](https://arxiv.org/abs/2007.13010)
