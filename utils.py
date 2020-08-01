@@ -1,5 +1,3 @@
-import os
-
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -98,19 +96,18 @@ def calc_gradient_penalty(f, x):
 
 
 def sample_k(*xs, k):
-  if k is None or k <= 0:
-    if len(xs) == 1:
-      return xs[0]
-    return xs
+    if k is None or k <= 0:
+        if len(xs) == 1:
+            return xs[0]
+        return xs
 
-  n = len(xs[0])
-  idcs = np.random.choice(n, min(k, n), replace=False)
-  ret = []
-  for x in xs:
-    assert len(x) == n
-    ret.append(x[idcs])
+    n = len(xs[0])
+    idcs = np.random.choice(n, min(k, n), replace=False)
+    ret = []
+    for x in xs:
+        assert len(x) == n
+        ret.append(x[idcs])
 
-  if len(ret) == 1:
-    return ret[0]
-  return ret
-
+    if len(ret) == 1:
+        return ret[0]
+    return ret
