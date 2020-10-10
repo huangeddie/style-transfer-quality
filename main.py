@@ -58,7 +58,7 @@ def run(args):
 
     # Save generated image and losses to disk
     utils.save_tensor_img(gen_img, os.path.join(args.out_dir, 'gen.png'))
-    loss_fig.savefig(os.path.join(args.out_dir, 'losses.pdf'))
+    loss_fig.savefig(os.path.join(args.out_dir, 'losses.png'))
     print(f"Results saved to '{args.out_dir}'")
 
 
