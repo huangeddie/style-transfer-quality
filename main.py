@@ -3,16 +3,16 @@ import argparse
 parser = argparse.ArgumentParser(description='Style Transfer')
 
 # Style Loss
-parser.add_argument('--distance', type=str, default='wass',
-                    choices=['wass', 'quad', 'linear', 'gauss', 'norm', 'gram'])
+parser.add_argument('--distance', type=str, default='disc-wass',
+                    choices=['disc-wass', 'disc-sn', 'quad', 'linear', 'gauss', 'norm', 'gram'])
 parser.add_argument('--samples', type=int, default=1024)
 
 # Transfer
-parser.add_argument('--steps', type=int, default=500, help='num training steps')
+parser.add_argument('--steps', type=int, default=800, help='num training steps')
 parser.add_argument('--imsize', type=int, default=224, help='image size')
-parser.add_argument('--lr', type=float, default=2e-2,
+parser.add_argument('--img-lr', type=float, default=1e-2,
                     help='learning rate for image pixels')
-parser.add_argument('--disc-lr', type=float, default=2e-2,
+parser.add_argument('--disc-lr', type=float, default=1e-2,
                     help='learning rate for discriminators')
 parser.add_argument('--alpha', type=float, default=0.2, help='alpha')
 parser.add_argument('--device', choices=['cuda', 'cpu'], default='cpu')
@@ -37,6 +37,7 @@ import utils
 import transfer_model
 from transfer_model import cnn
 import style
+import matplotlib.pyplot as plt
 
 
 def run(args):
@@ -47,19 +48,18 @@ def run(args):
     style_layers, content_layers = cnn.get_layers(args)
 
     # Make model
-    style_model = transfer_model.make(args, style_layers, content_layers, style_img, content_img)
+    model = transfer_model.make(args, style_layers, content_layers, style_img, content_img)
 
     # Transfer
-    losses_dict = style.transfer(args, gen_img, style_img, style_model)
+    losses_dict = style.transfer(args, gen_img, style_img, model)
 
-    # Losses
+    # Plot losses
     loss_fig = utils.plot_losses(losses_dict)
 
-    # Save generated image
+    # Save generated image and losses to disk
     utils.save_tensor_img(gen_img, os.path.join(args.out_dir, 'gen.png'))
-
-    # Save losses
-    loss_fig.savefig(os.path.join(args.out_dir, 'losses.pdf'))
+    loss_fig.savefig(os.path.join(args.out_dir, 'losses.png'))
+    print(f"Results saved to '{args.out_dir}'")
 
 
 if __name__ == '__main__':

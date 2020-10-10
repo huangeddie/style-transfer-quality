@@ -1,30 +1,42 @@
 import utils
 
-def disc_step(disc, opt, gen_img, style_img):
-    disc.train()
+import torch
+from torch.nn import functional as F
+
+def disc_step(model, opt, gen_img, style_img):
+    model.train()
     opt.zero_grad()
 
-    # Wasserstein Distance
-    d_real, _ = disc(style_img)
-    d_gen, _ = disc(gen_img)
-    disc_loss = d_gen - d_real
+    d_real, _ = model(style_img)
+    d_gen, _ = model(gen_img)
 
-    # Gradient Penalty
-    x = utils.interpolate(gen_img, style_img)
-    gp = disc.disc_gp(x)
+    if model.disc_mode == 'wass':
+        # Wasserstein Distance
+        dist = d_gen - d_real
 
-    loss = disc_loss + 10 * gp
+        # Gradient Penalty
+        x = utils.interpolate(gen_img, style_img)
+        gp = model.disc_gp(x)
+
+        loss = dist + 10 * gp
+    else:
+        assert model.disc_mode == 'sn', model.disc_mode
+        # Spectral norm
+        real_loss = F.binary_cross_entropy_with_logits(d_real, torch.ones_like(d_real))
+        gen_loss = F.binary_cross_entropy_with_logits(d_gen, torch.zeros_like(d_gen))
+        loss = real_loss + gen_loss
+
     loss.backward()
 
     opt.step()
-    return disc_loss.item(), gp.item()
+    return loss.item()
 
 
 def sc_step(model, opt, gen_img, args):
     model.eval()
     opt.zero_grad()
 
-    if args.distance == "wass":
+    if args.distance.startswith('disc-'):
         disc_real, content_loss = model(gen_img)
         style_loss = -disc_real
     else:

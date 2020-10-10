@@ -3,11 +3,24 @@ Performs style transfer by defining the style loss as the Wasserstein distance b
 
 # Example usage
 ```python
-python main.py --distance=wass --style=imgs/la_muse.jpg --content=imgs/golden_gate.jpg --device=cuda
+python main.py --distance=disc-sn --style=imgs/la_muse.jpg --content=imgs/golden_gate.jpg --device=cuda
 ```
-Runs style transfer using the Wasserstein distance as the loss between the features. The style image and content images are the La Muse painting and a picture of the golden gate bridge respectively. Training is run on a GPU.
+Runs style transfer using a neural network to discriminate between the features. 
+The style image and content images are the La Muse painting and a picture of the golden gate bridge respectively. 
+Training is run on a GPU.
 
 See the `main.py` for more argument options.
+
+# Style distances
+The code supports different types of style distances:
+> MMD stands for Maximum Mean Discrepancy
+* `disc-sn`: Binary cross entropy using the spectral norm discriminator from SNGAN
+* `disc-wp`: Wasserstein distance implemented using WGAN-GP
+* `quad`: MMD with the quadratic kernel
+* `linear`: MMD with the linear kernel
+* `gauss`: MMD with the Gaussian kernel
+* `norm`: Square error between 1st order statistics, mean and standard deviation
+* `gram`: Square error between the gramian matrices. This is the original method of NST by Gatys et. al.
 
 # Abstract
 Neural style transfer (NST) is a powerful image generation technique that uses a convolutional neural network (CNN) to merge the content of one image with the style of another. Contemporary methods of NST use first or second order statistics of the CNN's features to achieve transfers with relatively little computational cost. However, these methods cannot fully extract the style from the CNN's features. We present a new algorithm for style transfer that fully extracts the style from the features by redefining the style loss as the Wasserstein distance between the distribution of features. Thus, we set a new standard in style transfer quality. In addition, we state two important interpretations of NST. The first is a re-emphasis from Li et al., which states that style is simply the distribution of features. The second states that NST is a type of generative adversarial network (GAN) problem.
