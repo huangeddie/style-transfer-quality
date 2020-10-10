@@ -55,7 +55,7 @@ class StyleLayerDisc(nn.Module):
         )
         if mode == 'sn':
             for module in self.disc.modules():
-                if hasattr(module, 'weight'):
+                if isinstance(module, nn.Linear):
                     SpectralNorm.apply(module, 'weight', n_power_iterations=1, eps=1e-12, dim=0)
         else:
             assert mode == 'wass'
