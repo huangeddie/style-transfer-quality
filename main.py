@@ -56,7 +56,7 @@ def run(args):
     # Plot generated image and losses
     # Plot the images and losses
     plt.figure(figsize=(10, 10))
-    plt.imshow(gen_img.numpy().transpose(1, 2, 0))
+    plt.imshow(gen_img.detach().cpu().numpy().transpose(1, 2, 0))
     loss_fig = utils.plot_losses(losses_dict)
     plt.show()
 
