@@ -52,9 +52,11 @@ class StyleLayerDisc(nn.Module):
             nn.Linear(h_dim, 1),
         )
         if mode == 'sn':
-            SpectralNorm.apply(self.disc[0], 'weight', n_power_iterations=1, eps=1e-12, dim=0)
-            SpectralNorm.apply(self.disc[2], 'weight', n_power_iterations=1, eps=1e-12, dim=0)
-            SpectralNorm.apply(self.disc[3], 'weight', n_power_iterations=1, eps=1e-12, dim=0)
+            for module in self.disc.modules():
+                if hasattr(module, 'weight'):
+                    SpectralNorm.apply(module, 'weight', n_power_iterations=1, eps=1e-12, dim=0)
+        else:
+            assert mode == 'wass'
 
     def forward(self, inp):
         x, disc_outs = inp

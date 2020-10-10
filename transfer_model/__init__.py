@@ -11,7 +11,7 @@ class TransferModel(nn.Module):
         self.disc_mode = None
         if distance.startswith('disc-'):
             self.layer_type = 'disc'
-            self.disc_mode = distance.split('disc-')[0]
+            self.disc_mode = distance.split('disc-')[-1]
         else:
             self.layer_type = 'kernel'
 
