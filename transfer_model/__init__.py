@@ -16,9 +16,9 @@ class TransferModel(nn.Module):
                 style_feat = cnn_layer(style_feat)
                 style_feat.requires_grad_(False)
 
-            if distance == "wass":
-                main.append(layers.StyleLayerDisc(cnn_layer, style_feat.shape[1],
-                                                  sample_size))
+            if distance.startswith('disc-'):
+                mode = distance.split('disc-')[0]
+                main.append(layers.StyleLayerDisc(mode, cnn_layer, style_feat.shape[1], sample_size))
             else:
                 kernel = kernels.kernel_map[distance]
                 assert sample_size is not None

@@ -3,8 +3,8 @@ import argparse
 parser = argparse.ArgumentParser(description='Style Transfer')
 
 # Style Loss
-parser.add_argument('--distance', type=str, default='wass',
-                    choices=['wass', 'quad', 'linear', 'gauss', 'norm', 'gram'])
+parser.add_argument('--distance', type=str, default='disc-sn',
+                    choices=['disc-wass', 'disc-sn', 'quad', 'linear', 'gauss', 'norm', 'gram'])
 parser.add_argument('--samples', type=int, default=1024)
 
 # Transfer

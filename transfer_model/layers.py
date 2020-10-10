@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+from torch.nn.utils.spectral_norm import SpectralNorm
 
 import utils
 
@@ -35,11 +36,12 @@ class StyleLayerKernel(nn.Module):
 
 
 class StyleLayerDisc(nn.Module):
-    def __init__(self, cnn_chunk, out_c, k, h_dim=256):
+    def __init__(self, mode, cnn_chunk, out_c, k, h_dim=256):
         super().__init__()
 
         self.conv = cnn_chunk
         self.k = k
+        self.mode = mode
 
         # Discriminator
         self.disc = nn.Sequential(
@@ -49,6 +51,10 @@ class StyleLayerDisc(nn.Module):
             nn.ReLU(),
             nn.Linear(h_dim, 1),
         )
+        if mode == 'sn':
+            SpectralNorm.apply(self.disc[0], 'weight', n_power_iterations=1, eps=1e-12, dim=0)
+            SpectralNorm.apply(self.disc[2], 'weight', n_power_iterations=1, eps=1e-12, dim=0)
+            SpectralNorm.apply(self.disc[3], 'weight', n_power_iterations=1, eps=1e-12, dim=0)
 
     def forward(self, inp):
         x, disc_outs = inp
