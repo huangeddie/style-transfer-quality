@@ -3,14 +3,14 @@ import argparse
 parser = argparse.ArgumentParser(description='Style Transfer')
 
 # Style Loss
-parser.add_argument('--distance', type=str, default='disc-sn',
+parser.add_argument('--distance', type=str, default='disc-wass',
                     choices=['disc-wass', 'disc-sn', 'quad', 'linear', 'gauss', 'norm', 'gram'])
 parser.add_argument('--samples', type=int, default=1024)
 
 # Transfer
 parser.add_argument('--steps', type=int, default=500, help='num training steps')
 parser.add_argument('--imsize', type=int, default=224, help='image size')
-parser.add_argument('--lr', type=float, default=2e-2,
+parser.add_argument('--img-lr', type=float, default=2e-2,
                     help='learning rate for image pixels')
 parser.add_argument('--disc-lr', type=float, default=2e-2,
                     help='learning rate for discriminators')

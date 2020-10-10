@@ -12,7 +12,7 @@ def get_optimizers(model, gen_img, args):
         disc_opt = None
 
     # Image parameters for optimization
-    img_opt = optim.Adam([gen_img.requires_grad_()], lr=args.lr)
+    img_opt = optim.Adam([gen_img.requires_grad_()], lr=args.img_lr)
 
     return img_opt, disc_opt
 
