@@ -53,12 +53,8 @@ def run(args):
     # Transfer
     losses_dict = style.transfer(args, gen_img, style_img, model)
 
-    # Plot generated image and losses
-    # Plot the images and losses
-    plt.figure(figsize=(10, 10))
-    plt.imshow(gen_img.squeeze(0).detach().cpu().numpy().transpose(1, 2, 0))
+    # Plot losses
     loss_fig = utils.plot_losses(losses_dict)
-    plt.show()
 
     # Save generated image and losses to disk
     utils.save_tensor_img(gen_img, os.path.join(args.out_dir, 'gen.png'))
