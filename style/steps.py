@@ -20,7 +20,7 @@ def disc_step(model, opt, gen_img, style_img):
 
         loss = dist + 10 * gp
     else:
-        assert model.disc_mode == 'sn'
+        assert model.disc_mode == 'sn', model.disc_mode
         # Spectral norm
         real_loss = F.binary_cross_entropy_with_logits(d_real, torch.ones_like(d_real))
         gen_loss = F.binary_cross_entropy_with_logits(d_gen, torch.zeros_like(d_gen))
