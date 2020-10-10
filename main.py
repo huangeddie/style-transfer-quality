@@ -8,7 +8,7 @@ parser.add_argument('--distance', type=str, default='disc-wass',
 parser.add_argument('--samples', type=int, default=1024)
 
 # Transfer
-parser.add_argument('--steps', type=int, default=500, help='num training steps')
+parser.add_argument('--steps', type=int, default=800, help='num training steps')
 parser.add_argument('--imsize', type=int, default=224, help='image size')
 parser.add_argument('--img-lr', type=float, default=1e-2,
                     help='learning rate for image pixels')
