@@ -36,7 +36,7 @@ def sc_step(model, opt, gen_img, args):
     model.eval()
     opt.zero_grad()
 
-    if args.distance == "wass":
+    if args.distance.startswith('disc-'):
         disc_real, content_loss = model(gen_img)
         style_loss = -disc_real
     else:

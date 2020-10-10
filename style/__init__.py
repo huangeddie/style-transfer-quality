@@ -6,7 +6,7 @@ from style import steps
 
 def get_optimizers(model, gen_img, args):
     # Convolutional parameters
-    if args.distance == "wass":
+    if args.distance.startswith('disc-'):
         disc_opt = optim.Adam(model.disc_parameters(), lr=args.disc_lr)
     else:
         disc_opt = None
@@ -23,16 +23,15 @@ def transfer(args, gen_img, style_img, model):
 
     # Losses
     style_losses, content_losses = [], []
-    disc_losses, gp_losses = [], []
+    disc_losses = []
 
     # Train
     pbar = tqdm(range(0, args.steps), 'Style Transfer')
     for _ in pbar:
-        if args.distance == "wass":
+        if args.distance.startswith('disc-'):
             # Optimize the discriminator
-            disc_loss, gp_loss = steps.disc_step(model, disc_opt, gen_img, style_img)
+            disc_loss = steps.disc_step(model, disc_opt, gen_img, style_img)
             disc_losses.append(disc_loss)
-            gp_losses.append(gp_loss)
 
         # Optimize over style and content
         style_loss, content_loss = steps.sc_step(model, img_opt, gen_img, args)
@@ -44,14 +43,13 @@ def transfer(args, gen_img, style_img, model):
 
         # Progress Bar
         pbar_str = f'Style: {style_losses[-1]:.1f} Content: {content_losses[-1]:.1f} '
-        if args.distance == "wass":
-            pbar_str += f'Disc: {disc_losses[-1]:.1f} GP: {gp_losses[-1]:.1f} '
+        if args.distance.startswith('disc-'):
+            pbar_str += f'Disc: {disc_losses[-1]:.1f}'
         pbar.set_postfix_str(pbar_str)
 
     # Return losses
     loss_dict = {'style': style_losses, 'content': content_losses}
-    if args.distance == "wass":
+    if args.distance.startswith('disc-'):
         loss_dict['disc'] = disc_losses
-        loss_dict['gp'] = gp_losses
 
     return loss_dict
