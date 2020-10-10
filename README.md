@@ -1,5 +1,5 @@
 # About
-Performs style transfer by defining the style loss as the Wasserstein distance between the distribution of the the style image features and the generated image features. Results yield higher quality transfers than contemporary methods. 
+Performs style transfer by using a neural network to discriminate between the style image features and the generated image features. Results yield higher quality transfers than contemporary methods. 
 
 # Example usage
 ```python
