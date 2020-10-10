@@ -37,6 +37,7 @@ import utils
 import transfer_model
 from transfer_model import cnn
 import style
+import matplotlib.pyplot as plt
 
 
 def run(args):
@@ -55,11 +56,12 @@ def run(args):
     # Losses
     loss_fig = utils.plot_losses(losses_dict)
 
-    # Save generated image
+    # Save generated image and losses to disk
     utils.save_tensor_img(gen_img, os.path.join(args.out_dir, 'gen.png'))
-
-    # Save losses
     loss_fig.savefig(os.path.join(args.out_dir, 'losses.pdf'))
+
+    # Plot the images and losses
+    plt.imshow(gen_img.numpy().transpose(1, 2, 0))
 
 
 if __name__ == '__main__':

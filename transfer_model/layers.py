@@ -46,10 +46,8 @@ class StyleLayerDisc(nn.Module):
         # Discriminator
         self.disc = nn.Sequential(
             nn.Linear(out_c, h_dim),
-            nn.LayerNorm(h_dim, elementwise_affine=False),
             nn.ReLU(),
             nn.Linear(h_dim, h_dim),
-            nn.LayerNorm(h_dim, elementwise_affine=False),
             nn.ReLU(),
             nn.Linear(h_dim, 1),
         )
