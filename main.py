@@ -47,10 +47,10 @@ def run(args):
     style_layers, content_layers = cnn.get_layers(args)
 
     # Make model
-    style_model = transfer_model.make(args, style_layers, content_layers, style_img, content_img)
+    model = transfer_model.make(args, style_layers, content_layers, style_img, content_img)
 
     # Transfer
-    losses_dict = style.transfer(args, gen_img, style_img, style_model)
+    losses_dict = style.transfer(args, gen_img, style_img, model)
 
     # Losses
     loss_fig = utils.plot_losses(losses_dict)

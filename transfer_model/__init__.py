@@ -8,6 +8,13 @@ class TransferModel(nn.Module):
     def __init__(self, style_layers, style_img, distance, sample_size=None):
         super().__init__()
 
+        self.disc_mode = None
+        if distance.startswith('disc-'):
+            self.layer_type = 'disc'
+            self.disc_mode = distance.split('disc-')[0]
+        else:
+            self.layer_type = 'kernel'
+
         # Style
         main = []
         style_feat = style_img
@@ -16,12 +23,12 @@ class TransferModel(nn.Module):
                 style_feat = cnn_layer(style_feat)
                 style_feat.requires_grad_(False)
 
-            if distance.startswith('disc-'):
-                mode = distance.split('disc-')[0]
-                main.append(layers.StyleLayerDisc(mode, cnn_layer, style_feat.shape[1], sample_size))
+            if self.layer_type == 'disc':
+                main.append(layers.StyleLayerDisc(self.disc_mode, cnn_layer, style_feat.shape[1], sample_size))
             else:
-                kernel = kernels.kernel_map[distance]
+                assert self.layer_type == 'kernel'
                 assert sample_size is not None
+                kernel = kernels.kernel_map[distance]
                 main.append(layers.StyleLayerKernel(cnn_layer, style_feat, kernel,
                                                     sample_size))
         self.style = nn.Sequential(*main)

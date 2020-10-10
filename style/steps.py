@@ -3,24 +3,24 @@ import utils
 import torch
 from torch.nn import functional as F
 
-def disc_step(disc, opt, gen_img, style_img):
-    disc.train()
+def disc_step(model, opt, gen_img, style_img):
+    model.train()
     opt.zero_grad()
 
-    d_real, _ = disc(style_img)
-    d_gen, _ = disc(gen_img)
+    d_real, _ = model(style_img)
+    d_gen, _ = model(gen_img)
 
-    if disc.mode == 'wass':
+    if model.disc_mode == 'wass':
         # Wasserstein Distance
         dist = d_gen - d_real
 
         # Gradient Penalty
         x = utils.interpolate(gen_img, style_img)
-        gp = disc.disc_gp(x)
+        gp = model.disc_gp(x)
 
         loss = dist + 10 * gp
     else:
-        assert disc.mode == 'sn'
+        assert model.disc_mode == 'sn'
         # Spectral norm
         real_loss = F.binary_cross_entropy_with_logits(d_real, torch.ones_like(d_real))
         gen_loss = F.binary_cross_entropy_with_logits(d_gen, torch.zeros_like(d_gen))
