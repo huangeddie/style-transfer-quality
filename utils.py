@@ -6,6 +6,13 @@ from PIL import Image
 
 
 def center_crop_square(im, size):
+    """
+    Crops an image to image.
+
+    Args:
+        im: (array): write your description
+        size: (int): write your description
+    """
     width, height = im.size  # Get dimensions
 
     left = (width - size) / 2
@@ -19,6 +26,14 @@ def center_crop_square(im, size):
 
 
 def image_loader(image_name, imsize, device):
+    """
+    Convert an image to a tensor.
+
+    Args:
+        image_name: (str): write your description
+        imsize: (int): write your description
+        device: (todo): write your description
+    """
     loader = transforms.Compose([transforms.Resize(imsize),
                                  transforms.ToTensor()])
 
@@ -31,6 +46,11 @@ def image_loader(image_name, imsize, device):
 
 
 def get_starting_imgs(args):
+    """
+    Return an instance of a device.
+
+    Args:
+    """
     style_img = image_loader(args.style, args.imsize, args.device)
 
     if args.content is not None:
@@ -49,6 +69,13 @@ def get_starting_imgs(args):
 
 
 def save_tensor_img(out_img, outpath):
+    """
+    Save tensor to disk.
+
+    Args:
+        out_img: (todo): write your description
+        outpath: (str): write your description
+    """
     out_img = out_img.cpu().clone()
     # remove the gen batch dimension
     out_img = out_img.squeeze(0)
@@ -59,6 +86,12 @@ def save_tensor_img(out_img, outpath):
 
 
 def plot_losses(losses_dict):
+    """
+    Plot the loss function.
+
+    Args:
+        losses_dict: (dict): write your description
+    """
     num_plts = len(losses_dict.keys())
     fig = plt.figure(figsize=(5 * num_plts, 4))
     plot_dims = (1, num_plts)
@@ -72,6 +105,13 @@ def plot_losses(losses_dict):
 
 
 def interpolate(x, y):
+    """
+    Interpolate the interpolation
+
+    Args:
+        x: (array): write your description
+        y: (array): write your description
+    """
     alpha = torch.rand(1) * torch.ones(x.size())
     alpha = alpha.to(x.device)
 
@@ -82,6 +122,13 @@ import torch.autograd as autograd
 
 
 def calc_gradient_penalty(f, x):
+    """
+    Calculate the gradient of an objective function.
+
+    Args:
+        f: (array): write your description
+        x: (todo): write your description
+    """
     x.requires_grad_(True)
 
     y = f(x)
@@ -96,6 +143,13 @@ def calc_gradient_penalty(f, x):
 
 
 def sample_k(*xs, k):
+    """
+    Return k k k k k k k k k k k k k.
+
+    Args:
+        xs: (int): write your description
+        k: (int): write your description
+    """
     if k is None or k <= 0:
         if len(xs) == 1:
             return xs[0]

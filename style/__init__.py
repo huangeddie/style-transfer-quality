@@ -5,6 +5,13 @@ from style import steps
 
 
 def get_optimizers(model, gen_img, args):
+    """
+    Get the optimizer.
+
+    Args:
+        model: (todo): write your description
+        gen_img: (todo): write your description
+    """
     # Convolutional parameters
     if args.distance.startswith('disc-'):
         disc_opt = optim.Adam(model.disc_parameters(), lr=args.disc_lr)
@@ -18,6 +25,14 @@ def get_optimizers(model, gen_img, args):
 
 
 def transfer(args, gen_img, style_img, model):
+    """
+    Perform loss.
+
+    Args:
+        gen_img: (int): write your description
+        style_img: (str): write your description
+        model: (todo): write your description
+    """
     # Optimizers
     img_opt, disc_opt = get_optimizers(model, gen_img, args)
 

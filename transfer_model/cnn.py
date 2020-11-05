@@ -5,6 +5,13 @@ from torch import nn
 
 class Normalization(nn.Module):
     def __init__(self, device):
+        """
+        Initialize the device.
+
+        Args:
+            self: (todo): write your description
+            device: (todo): write your description
+        """
         super(Normalization, self).__init__()
         mean = torch.tensor([0.485, 0.456, 0.406], requires_grad=False)
         std = torch.tensor([0.229, 0.224, 0.225], requires_grad=False)
@@ -12,11 +19,23 @@ class Normalization(nn.Module):
         self.std = std.to(device).view(-1, 1, 1)
 
     def forward(self, img):
+        """
+        Forward forward
+
+        Args:
+            self: (todo): write your description
+            img: (todo): write your description
+        """
         # normalize img
         return (img - self.mean) / self.std
 
 
 def get_layers(args):
+    """
+    Get layers.
+
+    Args:
+    """
     norm = Normalization(args.device)
 
     # Get CNN and parse it's layers
