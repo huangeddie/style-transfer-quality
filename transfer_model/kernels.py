@@ -2,6 +2,13 @@ import torch
 import numpy as np
 
 def norm_kernel(x, y):
+    """
+    Compute the kernel.
+
+    Args:
+        x: (array): write your description
+        y: (array): write your description
+    """
   mean1 = torch.mean(x, dim=0)
   mean2 = torch.mean(y, dim=0)
   std1 = torch.std(x, dim=0)
@@ -12,6 +19,13 @@ def norm_kernel(x, y):
   return loss
 
 def linear_kernel(x, y):
+    """
+    Linear kernel
+
+    Args:
+        x: (array): write your description
+        y: (todo): write your description
+    """
   s1 = torch.mean(torch.mm(x, x.t()))
   s2 = torch.mean(torch.mm(y, y.t()))
   s3 = torch.mean(torch.mm(x, y.t()))
@@ -20,6 +34,13 @@ def linear_kernel(x, y):
 
 
 def quad_kernel(x, y):
+    """
+    Quad kernel.
+
+    Args:
+        x: (todo): write your description
+        y: (todo): write your description
+    """
     z = x.shape[1]
     assert y.shape[1] == z
 
@@ -30,12 +51,26 @@ def quad_kernel(x, y):
     return (s1 + s2 - 2 * s3) / (2 * np.sqrt(z))
 
 def gram_kernel(x, y):
+    """
+    Torch kernel.
+
+    Args:
+        x: (array): write your description
+        y: (array): write your description
+    """
   Gx = torch.mm(x.t(), x)
   Gy = torch.mm(y.t(), y)
   return torch.mean((Gx - Gy) ** 2)
 
 
 def gaussian_kernel(x, y):
+    """
+    Gaussian kernel.
+
+    Args:
+        x: (float): write your description
+        y: (float): write your description
+    """
     x_sq_dist = torch.norm(x - x, dim=1) ** 2
     y_sq_dist = torch.norm(y - y, dim=1) ** 2
     xy_sq_dist = torch.norm(x - y, dim=1) ** 2

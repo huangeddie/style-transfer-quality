@@ -7,6 +7,16 @@ import utils
 
 class StyleLayerKernel(nn.Module):
     def __init__(self, cnn_chunk, style_feats, kernel, k):
+        """
+        Initialize kernel.
+
+        Args:
+            self: (todo): write your description
+            cnn_chunk: (todo): write your description
+            style_feats: (todo): write your description
+            kernel: (todo): write your description
+            k: (int): write your description
+        """
         super().__init__()
 
         self.conv = cnn_chunk
@@ -21,6 +31,13 @@ class StyleLayerKernel(nn.Module):
         self.k = k
 
     def forward(self, inp):
+        """
+        Forward function.
+
+        Args:
+            self: (todo): write your description
+            inp: (todo): write your description
+        """
         x, kernel_outs = inp
         feat_maps = self.conv(x)
         batch_size, channels, height, width = feat_maps.shape
@@ -37,6 +54,17 @@ class StyleLayerKernel(nn.Module):
 
 class StyleLayerDisc(nn.Module):
     def __init__(self, mode, cnn_chunk, out_c, k, h_dim=256):
+        """
+        Initialize a chunk.
+
+        Args:
+            self: (todo): write your description
+            mode: (todo): write your description
+            cnn_chunk: (todo): write your description
+            out_c: (str): write your description
+            k: (int): write your description
+            h_dim: (int): write your description
+        """
         super().__init__()
 
         self.conv = cnn_chunk
@@ -59,6 +87,13 @@ class StyleLayerDisc(nn.Module):
             assert mode == 'wass'
 
     def forward(self, inp):
+        """
+        Forward computation.
+
+        Args:
+            self: (todo): write your description
+            inp: (todo): write your description
+        """
         x, disc_outs = inp
         # Spatial features
         cnn_feats = self.conv(x)
@@ -73,6 +108,13 @@ class StyleLayerDisc(nn.Module):
         return (cnn_feats, disc_outs)
 
     def disc_gp(self, x):
+        """
+        Discretize the gradient of x.
+
+        Args:
+            self: (todo): write your description
+            x: (array): write your description
+        """
         with torch.no_grad():
             # Spatial features
             cnn_feats = self.conv(x)

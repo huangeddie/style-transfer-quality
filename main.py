@@ -41,6 +41,11 @@ import matplotlib.pyplot as plt
 
 
 def run(args):
+    """
+    Run layers.
+
+    Args:
+    """
     # Images
     style_img, content_img, gen_img = utils.get_starting_imgs(args)
 
