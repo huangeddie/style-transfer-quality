@@ -21,7 +21,7 @@ class TransferModel(nn.Module):
         for cnn_layer in style_layers:
             with torch.no_grad():
                 style_feat = cnn_layer(style_feat)
-                style_feat.requires_grad_(False)
+            assert style_feat.requires_grad == False
 
             if self.layer_type == 'disc':
                 main.append(layers.StyleLayerDisc(self.disc_mode, cnn_layer, style_feat.shape[1], sample_size))
