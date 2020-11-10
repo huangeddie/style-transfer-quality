@@ -23,19 +23,19 @@ def get_layers(args):
     # Get CNN and parse it's layers
     if args.cnn == 'vgg19-bn':
         cnn = models.vgg19_bn(pretrained=args.pretrained).features.to(args.device).eval()
-        style_layers = [identity, norm, cnn[:1], cnn[1:8], cnn[8:15], cnn[15:28], cnn[28:41]]
-        content_layers = [identity, norm, cnn[:28]]
-    elif args.cnn == 'vgg19':
+        style_layers = [norm, cnn[:1], cnn[1:8], cnn[8:15], cnn[15:28], cnn[28:41]]
+        content_layers = [norm, cnn[:28]]
+    elif args.cnn == 'vgg19' or args.cnn == 'vgg19-relu':
+        relu = int(args.cnn.endswith('relu'))
         cnn = models.vgg19(pretrained=args.pretrained).features.to(args.device).eval()
-        style_layers = [identity, nn.Sequential(norm, cnn[:2]), cnn[2:7], cnn[7:12], cnn[12:21], cnn[21:30]]
-        content_layers = [identity, norm, cnn[:20]]
+        style_layers = [identity, nn.Sequential(norm, cnn[:1 + relu]), cnn[1 + relu:6 + relu], cnn[6 + relu:11 + relu],
+                        cnn[11 + relu:20 + relu], cnn[20 + relu:29 + relu]]
+        content_layers = [norm, cnn[:20 + relu]]
     elif args.cnn == 'resnet18':
         cnn = models.resnet18(pretrained=args.pretrained).to(args.device).eval()
-        style_layers = [identity, norm, cnn.conv1,
-                        nn.Sequential(cnn.bn1, cnn.relu, cnn.maxpool, cnn.layer1),
-                        cnn.layer2, cnn.layer3, cnn.layer4]
-        content_layers = [identity, norm, cnn.conv1, cnn.bn1, cnn.relu, cnn.maxpool,
-                          cnn.layer1, cnn.layer2, cnn.layer3]
+        style_layers = [norm, cnn.conv1, nn.Sequential(cnn.bn1, cnn.relu, cnn.maxpool, cnn.layer1), cnn.layer2,
+                        cnn.layer3, cnn.layer4]
+        content_layers = [norm, cnn.conv1, cnn.bn1, cnn.relu, cnn.maxpool, cnn.layer1, cnn.layer2, cnn.layer3]
     else:
         raise Exception(f"Unrecognized cnn_arch argument: {args.cnn}")
 
