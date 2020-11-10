@@ -37,12 +37,12 @@ class TransferModel(nn.Module):
         # Content
         self.content = nn.Sequential(*content_layers)
         with torch.no_grad():
-            self.content_feat = torch.tanh(self.content(content_img))
+            self.content_feat = self.content(content_img)
             self.content_feat.requires_grad_(False)
 
     def forward(self, img):
         if hasattr(self, 'content'):
-            semantic_feat = torch.tanh(self.content(img))
+            semantic_feat = self.content(img)
             content_loss = torch.mean((semantic_feat - self.content_feat) ** 2)
         else:
             content_loss = torch.tensor(0.0)

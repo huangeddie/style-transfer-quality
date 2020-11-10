@@ -13,8 +13,7 @@ class StyleLayerKernel(nn.Module):
         batch_size, channels, height, width = style_feats.shape
         assert batch_size == 1
 
-        style_feats = style_feats.view(channels, height * width).t()
-        self.style_feats = torch.tanh(style_feats)
+        self.style_feats = style_feats.view(channels, height * width).t()
         assert style_feats.requires_grad == False
 
         self.kernel = kernel
@@ -27,7 +26,6 @@ class StyleLayerKernel(nn.Module):
         assert batch_size == 1
 
         cnn_feats = feat_maps.view(channels, height * width).t()
-        cnn_feats = torch.tanh(cnn_feats)
 
         gen_sample, style_sample = utils.sample_k(cnn_feats, self.style_feats, k=self.k)
         kernel_out = self.kernel(gen_sample, style_sample)
@@ -65,7 +63,7 @@ class StyleLayerDisc(nn.Module):
         bsz, c, h, w = cnn_feats.size()
 
         # Discriminator
-        disc_inp = torch.tanh(cnn_feats.view(c, -1).t())
+        disc_inp = cnn_feats.view(c, -1).t()
         disc_inp = utils.sample_k(disc_inp, k=self.k)
         d = self.disc(disc_inp)
         disc_outs.append(torch.mean(d))
@@ -79,7 +77,7 @@ class StyleLayerDisc(nn.Module):
             bsz, c, h, w = cnn_feats.size()
 
             # Discriminator
-            disc_inp = torch.tanh(cnn_feats.view(c, -1).t())
+            disc_inp = cnn_feats.view(c, -1).t()
 
         # Gradient Penalty
         gp = utils.calc_gradient_penalty(self.disc, disc_inp)
