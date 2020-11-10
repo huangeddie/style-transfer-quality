@@ -33,10 +33,11 @@ def quad_kernel(x, y):
 
 
 def gram_kernel(x, y):
-    Nx = np.prod(x.shape)
-    Ny = np.prod(y.shape)
-    Gx = torch.mm(x.t(), x) / Nx
-    Gy = torch.mm(y.t(), y) / Ny
+    z = x.shape[1]
+    assert y.shape[1] == z
+
+    Gx = torch.mm(x.t(), x) / z
+    Gy = torch.mm(y.t(), y) / z
     return torch.mean((Gx - Gy) ** 2)
 
 
