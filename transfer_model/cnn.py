@@ -23,7 +23,7 @@ def get_layers(args):
     # Get CNN and parse it's layers
     if args.cnn == 'vgg19-bn':
         cnn = models.vgg19_bn(pretrained=args.pretrained).features.to(args.device).eval()
-        style_layers = [norm, cnn[:1], cnn[1:8], cnn[8:15], cnn[15:28], cnn[28:41]]
+        style_layers = [norm, cnn[:1+1], cnn[1+1:8+1], cnn[8+1:15+1], cnn[15+1:28+1], cnn[28+1:41+1]]
         content_layers = [norm, cnn[:28]]
     elif args.cnn == 'vgg19' or args.cnn == 'vgg19-relu':
         relu = int(args.cnn.endswith('relu'))
