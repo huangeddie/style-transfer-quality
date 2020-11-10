@@ -41,4 +41,10 @@ def get_layers(args):
     if args.layers is not None:
         style_layers = style_layers[:1 + args.layers]
 
+    for layers in [style_layers, content_layers]:
+        for layer in layers:
+            for module in layer.modules():
+                if hasattr(module, 'inplace'):
+                    module.inplace = False
+
     return style_layers, content_layers

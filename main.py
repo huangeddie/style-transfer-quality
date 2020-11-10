@@ -37,7 +37,6 @@ import utils
 import transfer_model
 from transfer_model import cnn
 import style
-import matplotlib.pyplot as plt
 
 
 def run(args):
