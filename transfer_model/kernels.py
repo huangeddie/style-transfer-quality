@@ -36,8 +36,8 @@ def gram_kernel(x, y):
     Nx = len(x)
     Ny = len(y)
 
-    Gx = torch.mm(x.t(), x) / Nx
-    Gy = torch.mm(y.t(), y) / Ny
+    Gx = torch.mm(x.t(), x) / (Nx ** 2)
+    Gy = torch.mm(y.t(), y) / (Ny ** 2)
     return torch.mean((Gx - Gy) ** 2)
 
 
