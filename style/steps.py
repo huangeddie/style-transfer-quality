@@ -42,7 +42,10 @@ def sc_step(model, opt, gen_img, args):
     else:
         style_loss, content_loss = model(gen_img)
 
-    loss = args.alpha * style_loss + (1 - args.alpha) * content_loss
+    if args.content is not None:
+        loss = args.alpha * style_loss + (1 - args.alpha) * content_loss
+    else:
+        loss = style_loss
     loss.backward()
     opt.step()
 

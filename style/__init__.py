@@ -5,14 +5,22 @@ from style import steps
 
 
 def get_optimizers(model, gen_img, args):
+    if args.opt == 'adam':
+        OptClass = optim.Adam
+        kwargs = {}
+    else:
+        assert args.opt == 'sgd'
+        OptClass = optim.SGD
+        kwargs = {'momentum': 0.9}
+
     # Convolutional parameters
     if args.distance.startswith('disc-'):
-        disc_opt = optim.Adam(model.disc_parameters(), lr=args.disc_lr)
+        disc_opt = OptClass(model.disc_parameters(), lr=args.disc_lr, **kwargs)
     else:
         disc_opt = None
 
     # Image parameters for optimization
-    img_opt = optim.Adam([gen_img.requires_grad_()], lr=args.img_lr)
+    img_opt = OptClass([gen_img.requires_grad_()], lr=args.img_lr, **kwargs)
 
     return img_opt, disc_opt
 

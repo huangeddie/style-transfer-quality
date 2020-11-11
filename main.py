@@ -14,13 +14,14 @@ parser.add_argument('--img-lr', type=float, default=1e-2,
                     help='learning rate for image pixels')
 parser.add_argument('--disc-lr', type=float, default=1e-2,
                     help='learning rate for discriminators')
+parser.add_argument('--opt', choices=['adam', 'sgd'], default='adam')
 parser.add_argument('--alpha', type=float, default=0.2, help='alpha')
 parser.add_argument('--device', choices=['cuda', 'cpu'], default='cpu')
 
 # CNN
 parser.add_argument('--cnn', type=str, default='vgg19-bn',
-                    choices=['vgg19-bn', 'vgg19', 'resnet18', 'dense121'])
-parser.add_argument('--layers', type=int, default=5)
+                    choices=['vgg19-bn', 'vgg19', 'vgg19-relu', 'resnet18', 'dense121'])
+parser.add_argument('--layers', type=int, default=None)
 parser.add_argument('--random', dest='pretrained', action='store_false')
 
 # Images
@@ -37,7 +38,6 @@ import utils
 import transfer_model
 from transfer_model import cnn
 import style
-import matplotlib.pyplot as plt
 
 
 def run(args):
