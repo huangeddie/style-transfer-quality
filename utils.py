@@ -72,6 +72,7 @@ def plot_losses(losses_dict):
         x = np.arange(len(y))
         plt.plot(x, y)
         plt.title(f"{k} losses")
+    plt.show()
     return fig
 
 
