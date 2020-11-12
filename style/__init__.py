@@ -70,7 +70,7 @@ def transfer(args, gen_img, style_img, model):
 
             # Display image?
             if args.display is not None and i % args.display == 0:
-                gen_hist.append(F.to_pil_image(gen_img))
+                gen_hist.append(F.to_pil_image(gen_img.squeeze(0)))
                 display_torch_img(gen_img, out)
 
     except KeyboardInterrupt:
