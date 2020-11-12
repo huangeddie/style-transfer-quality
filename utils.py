@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import torchvision.transforms as transforms
+import torchvision.transforms.functional as F
 from PIL import Image
 
 
@@ -46,7 +47,7 @@ def get_starting_imgs(args):
         gen_img.data.clamp_(0, 1)
     else:
         gen_img = Image.open(args.init_img)
-        gen_img = torch.from_numpy(np.array(gen_img, np.float32, copy=False))
+        gen_img = T.to_tensor(gen_img)
 
     return style_img, content_img, gen_img
 
