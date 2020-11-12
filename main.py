@@ -16,7 +16,7 @@ parser.add_argument('--disc-lr', type=float, default=1e-2,
                     help='learning rate for discriminators')
 parser.add_argument('--opt', choices=['adam', 'sgd'], default='adam')
 parser.add_argument('--alpha', type=float, default=0.2, help='alpha')
-parser.add_argument('--device', choices=['cuda', 'cpu'], default='cpu')
+parser.add_argument('--device', choices=['cuda', 'cpu'], default='cuda')
 
 # CNN
 parser.add_argument('--cnn', type=str, default='vgg19-bn',
