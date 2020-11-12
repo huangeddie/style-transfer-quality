@@ -38,12 +38,15 @@ def get_starting_imgs(args):
     else:
         content_img = None
 
-    if args.init_img == 'content' and args.content is not None:
+    if args.init_img == 'content':
+        assert args.content is not None
         gen_img = content_img.clone()
-    else:
-        assert args.init_img == 'random' or args.content is None
+    elif: args.init_img == 'random':
         gen_img = torch.randn(style_img.data.size(), device=args.device)
         gen_img.data.clamp_(0, 1)
+    else:
+        gen_img = Image.open(args.init_img)
+        gen_img = torch.as_tensor(np.asarray(gen_img), device=args.device)
 
     return style_img, content_img, gen_img
 
