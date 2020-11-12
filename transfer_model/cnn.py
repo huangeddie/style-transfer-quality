@@ -27,7 +27,7 @@ def get_layers(args):
         style_layers = [norm, cnn[:1 + relu], cnn[1 + relu:8 + relu], cnn[8 + relu:15 + relu], cnn[15 + relu:28 + relu], cnn[28 + relu:41 + relu]]
         content_layers = [norm, cnn[:28 + relu]]
     elif args.cnn.startswith('vgg19'):
-        relu = int(args.cnn.endswith('relu'))
+        relu = 2 * int(args.cnn.endswith('relu'))
         cnn = models.vgg19(pretrained=args.pretrained).features.to(args.device).eval()
         style_layers = [identity, nn.Sequential(norm, cnn[:1 + relu]), cnn[1 + relu:6 + relu], cnn[6 + relu:11 + relu],
                         cnn[11 + relu:20 + relu], cnn[20 + relu:29 + relu]]
