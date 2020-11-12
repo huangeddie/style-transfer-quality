@@ -34,8 +34,8 @@ parser.add_argument('--out-dir', type=str, default='out/')
 
 import os
 import utils
-import transfer_model
-from transfer_model import cnn
+import arch
+from arch import cnn
 import style
 
 
@@ -47,7 +47,7 @@ def run(args):
     style_layers, content_layers = cnn.get_layers(args)
 
     # Make model
-    model = transfer_model.make(args, style_layers, content_layers, style_img, content_img)
+    model = arch.make(args, style_layers, content_layers, style_img, content_img)
 
     # Transfer
     losses_dict = style.transfer(args, gen_img, style_img, model)
