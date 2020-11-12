@@ -50,7 +50,7 @@ def transfer(args, gen_img, style_img, model):
         gen_img.data.clamp_(0, 1)
 
         # Progress Bar
-        pbar_str = f'Style: {style_losses[-1]:.1f} Content: {content_losses[-1]:.1f} '
+        pbar_str = f'Style: {style_losses[-1]:.3} Content: {content_losses[-1]:.3} '
         if args.distance.startswith('disc-'):
             pbar_str += f'Disc: {disc_losses[-1]:.1f}'
         pbar.set_postfix_str(pbar_str)
