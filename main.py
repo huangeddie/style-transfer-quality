@@ -31,6 +31,7 @@ parser.add_argument('--content', type=str, default=None)
 
 # Output
 parser.add_argument('--out-dir', type=str, default='out/')
+parser.add_argument('--display', type=int, default=None)
 
 import os
 import utils

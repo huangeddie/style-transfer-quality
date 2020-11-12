@@ -1,4 +1,6 @@
+from IPython import display
 from torch import optim
+from torchvision.transforms import functional as F
 from tqdm.auto import tqdm
 
 from style import steps
@@ -35,7 +37,7 @@ def transfer(args, gen_img, style_img, model):
 
     # Train
     pbar = tqdm(range(0, args.steps), 'Style Transfer')
-    for _ in pbar:
+    for i in pbar:
         if args.distance.startswith('disc-'):
             # Optimize the discriminator
             disc_loss = steps.disc_step(model, disc_opt, gen_img, style_img)
@@ -54,6 +56,11 @@ def transfer(args, gen_img, style_img, model):
         if args.distance.startswith('disc-'):
             pbar_str += f'Disc: {disc_losses[-1]:.1f}'
         pbar.set_postfix_str(pbar_str)
+
+        # Display image?
+        if args.display is not None and i % args.display == 0:
+            display.clear_output()
+            display.display(F.to_pil_image(style_img.squeeze(0)))
 
     # Return losses
     loss_dict = {'style': style_losses, 'content': content_losses}
