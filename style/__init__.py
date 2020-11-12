@@ -82,7 +82,7 @@ def transfer(args, gen_img, style_img, model):
 
     # Return losses
     loss_dict = {'style': style_losses}
-    if args.content is None:
+    if args.content is not None:
         loss_dict['content'] = content_losses
     if args.distance.startswith('disc-'):
         loss_dict['disc'] = disc_losses
