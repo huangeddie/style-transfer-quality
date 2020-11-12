@@ -38,7 +38,7 @@ def gram_kernel(x, y):
 
     Gx = torch.mm(x.t(), x) / Nx
     Gy = torch.mm(y.t(), y) / Ny
-    return torch.mean((Gx - Gy) ** 2)
+    return torch.mean((Gx - Gy) ** 2) * 1e4
 
 
 def gaussian_kernel(x, y):
