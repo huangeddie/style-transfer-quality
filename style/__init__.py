@@ -1,9 +1,16 @@
 from IPython import display
+from ipywidgets import Output
 from torch import optim
 from torchvision.transforms import functional as F
 from tqdm.auto import tqdm
-from ipywidgets import Output
+
 from style import steps
+
+
+def display_torch_img(gen_img, out):
+    with out:
+        display.clear_output()
+        display.display(F.to_pil_image(gen_img.squeeze(0)))
 
 
 def get_optimizers(model, gen_img, args):
@@ -61,9 +68,11 @@ def transfer(args, gen_img, style_img, model):
 
         # Display image?
         if args.display is not None and i % args.display == 0:
-            with out:
-                display.clear_output()
-                display.display(F.to_pil_image(gen_img.squeeze(0)))
+            display_torch_img(gen_img, out)
+
+    # Display image?
+    if args.display is not None:
+        display_torch_img(gen_img, out)
 
     # Return losses
     loss_dict = {'style': style_losses, 'content': content_losses}
