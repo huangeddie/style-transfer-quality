@@ -57,7 +57,7 @@ def run(args):
     loss_fig = utils.plot_losses(losses_dict)
 
     # Save resized style image, generated image and losses to disk
-    utils.save_tensor_img(gen_img, os.path.join(args.out_dir, 'style.png'))
+    utils.save_tensor_img(style_img, os.path.join(args.out_dir, 'style.png'))
     utils.save_tensor_img(gen_img, os.path.join(args.out_dir, 'gen.png'))
     loss_fig.savefig(os.path.join(args.out_dir, 'losses.png'))
     print(f"Results saved to '{args.out_dir}'")
