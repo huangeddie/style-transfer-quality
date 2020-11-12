@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-from transfer_model import layers, kernels
+from arch import layers, kernels
 
 
 class TransferModel(nn.Module):
