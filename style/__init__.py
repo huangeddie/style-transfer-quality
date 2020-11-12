@@ -7,7 +7,7 @@ from style import steps
 def get_optimizers(model, gen_img, args):
     if args.opt == 'adam':
         OptClass = optim.Adam
-        kwargs = {'betas': (0.99, 0.999), 'eps': 0.1}
+        kwargs = {}
     else:
         assert args.opt == 'sgd'
         OptClass = optim.SGD
