@@ -60,7 +60,7 @@ def transfer(args, gen_img, style_img, model):
         # Display image?
         if args.display is not None and i % args.display == 0:
             display.clear_output()
-            display.display(F.to_pil_image(style_img.squeeze(0)))
+            display.display(F.to_pil_image(gen_img.squeeze(0)))
 
     # Return losses
     loss_dict = {'style': style_losses, 'content': content_losses}
