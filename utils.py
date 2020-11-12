@@ -46,7 +46,7 @@ def get_starting_imgs(args):
         gen_img.data.clamp_(0, 1)
     else:
         gen_img = Image.open(args.init_img)
-        gen_img = torch.as_tensor(np.asarray(gen_img), device=args.device)
+        gen_img = torch.from_numpy(np.array(gen_img, np.float32, copy=False))
 
     return style_img, content_img, gen_img
 
