@@ -39,10 +39,6 @@ def get_layers(args):
         content_layers = [norm, cnn.conv1, cnn.bn1, cnn.relu, cnn.maxpool, cnn.layer1, cnn.layer2, cnn.layer3]
     else:
         raise Exception(f"Unrecognized cnn_arch argument: {args.cnn}")
-
-    # Freeze parameters
-    for param in cnn.parameters():
-        param.requires_grad_(False)   
     
     # Subet of layers?
     if args.layers is not None:
