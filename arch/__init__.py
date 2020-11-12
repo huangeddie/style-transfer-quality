@@ -73,7 +73,7 @@ class TransferModel(nn.Module):
         return params
 
 
-def make(args, style_layers, content_layers, style_img, content_img):
+def make_model(args, style_layers, content_layers, style_img, content_img):
     # Initialize model
     model = TransferModel(style_layers, style_img, args.distance, args.samples).to(args.device)
 

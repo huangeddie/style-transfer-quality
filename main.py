@@ -47,7 +47,7 @@ def run(args):
     style_layers, content_layers = cnn.get_layers(args)
 
     # Make model
-    model = arch.make(args, style_layers, content_layers, style_img, content_img)
+    model = arch.make_model(args, style_layers, content_layers, style_img, content_img)
 
     # Transfer
     losses_dict = style.transfer(args, gen_img, style_img, model)
