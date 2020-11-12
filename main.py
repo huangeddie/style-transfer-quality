@@ -54,7 +54,7 @@ def run(args):
     losses_dict, gen_hist = style.transfer(args, gen_img, style_img, model)
 
     # Plot losses
-    loss_fig, gen_hist = utils.plot_losses(losses_dict)
+    loss_fig = utils.plot_losses(losses_dict)
 
     # Save
     # Resized style
