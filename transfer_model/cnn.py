@@ -39,9 +39,15 @@ def get_layers(args):
     else:
         raise Exception(f"Unrecognized cnn_arch argument: {args.cnn}")
 
+    # Freeze parameters
+    for param in cnn.parameters():
+        param.requires_grad_(False)   
+    
+    # Subet of layers?
     if args.layers is not None:
         style_layers = style_layers[:1 + args.layers]
 
+    # Remove inplace operations
     for layers in [style_layers, content_layers]:
         for layer in layers:
             for module in layer.modules():
