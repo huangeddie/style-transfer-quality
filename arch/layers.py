@@ -43,10 +43,11 @@ class StyleLayerDisc(nn.Module):
 
         # Discriminator
         self.disc = nn.Sequential(
+            nn.Tanh(),
             nn.Linear(out_c, h_dim),
-            nn.LeakyReLU(0.1),
+            nn.ReLU(),
             nn.Linear(h_dim, h_dim),
-            nn.LeakyReLU(0.1),
+            nn.ReLU(),
             nn.Linear(h_dim, 1),
         )
         if mode == 'sn':
