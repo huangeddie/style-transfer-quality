@@ -2,7 +2,7 @@ from IPython import display
 from torch import optim
 from torchvision.transforms import functional as F
 from tqdm.auto import tqdm
-
+from ipywidgets import Output
 from style import steps
 
 
@@ -37,6 +37,8 @@ def transfer(args, gen_img, style_img, model):
 
     # Train
     pbar = tqdm(range(0, args.steps), 'Style Transfer')
+    out = Output()
+    display.display(out)
     for i in pbar:
         if args.distance.startswith('disc-'):
             # Optimize the discriminator
@@ -59,10 +61,10 @@ def transfer(args, gen_img, style_img, model):
 
         # Display image?
         if args.display is not None and i % args.display == 0:
-            display.clear_output()
-            pbar.display()
-            display.display(F.to_pil_image(gen_img.squeeze(0)))
-            print(f'step {i}')
+            with out:
+                display.clear_output()
+                display.display(F.to_pil_image(gen_img.squeeze(0)))
+                print(f'step {i}')
 
     # Return losses
     loss_dict = {'style': style_losses, 'content': content_losses}
