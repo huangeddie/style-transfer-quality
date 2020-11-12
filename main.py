@@ -20,7 +20,7 @@ parser.add_argument('--device', choices=['cuda', 'cpu'], default='cpu')
 
 # CNN
 parser.add_argument('--cnn', type=str, default='vgg19-bn',
-                    choices=['vgg19-bn', 'vgg-bn-relu', 'vgg19', 'vgg19-relu', 'resnet18', 'dense121'])
+                    choices=['vgg19-bn', 'vgg19-bn-relu', 'vgg19', 'vgg19-relu', 'resnet18', 'dense121'])
 parser.add_argument('--layers', type=int, default=None)
 parser.add_argument('--random', dest='pretrained', action='store_false')
 
