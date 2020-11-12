@@ -47,7 +47,7 @@ def get_starting_imgs(args):
         gen_img.data.clamp_(0, 1)
     else:
         gen_img = Image.open(args.init_img)
-        gen_img = F.to_tensor(gen_img).to(args.device)
+        gen_img = F.to_tensor(gen_img).unsqueeze(0).to(args.device)
 
     return style_img, content_img, gen_img
 
