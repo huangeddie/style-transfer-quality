@@ -10,7 +10,7 @@ from style import steps
 def display_torch_img(gen_img, out):
     with out:
         display.clear_output()
-        display.display(F.to_pil_image(gen_img.squeeze(0)))
+        display.display(F.to_pil_image(gen_img.squeeze(0)).resize((128, 128)))
 
 
 def get_optimizers(model, gen_img, args):
