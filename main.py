@@ -51,14 +51,18 @@ def run(args):
     model = arch.make_model(args, style_layers, content_layers, style_img, content_img)
 
     # Transfer
-    losses_dict = style.transfer(args, gen_img, style_img, model)
+    losses_dict, gen_hist = style.transfer(args, gen_img, style_img, model)
 
     # Plot losses
-    loss_fig = utils.plot_losses(losses_dict)
+    loss_fig, gen_hist = utils.plot_losses(losses_dict)
 
-    # Save resized style image, generated image and losses to disk
+    # Save
+    # Resized style
     utils.save_tensor_img(style_img, os.path.join(args.out_dir, 'style.png'))
+    # Generated image
     utils.save_tensor_img(gen_img, os.path.join(args.out_dir, 'gen.png'))
+    gen_hist[0].save(os.path.join(args.out_dir, 'gen.gif'), save_all=True, append_images=gen_hist[1:])
+    # Losses
     loss_fig.savefig(os.path.join(args.out_dir, 'losses.png'))
     print(f"Results saved to '{args.out_dir}'")
 

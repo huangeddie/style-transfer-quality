@@ -64,7 +64,7 @@ def save_tensor_img(out_img, outpath):
 
 def plot_losses(losses_dict):
     num_plts = len(losses_dict.keys())
-    fig = plt.figure(figsize=(5 * num_plts, 4))
+    fig = plt.figure(figsize=(4 * num_plts, 4))
     plot_dims = (1, num_plts)
     for j, k in enumerate(losses_dict.keys()):
         plt.subplot(*plot_dims, 1 + j)
