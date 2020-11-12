@@ -41,7 +41,7 @@ def get_starting_imgs(args):
     if args.init_img == 'content':
         assert args.content is not None
         gen_img = content_img.clone()
-    elif: args.init_img == 'random':
+    elif args.init_img == 'random':
         gen_img = torch.randn(style_img.data.size(), device=args.device)
         gen_img.data.clamp_(0, 1)
     else:
