@@ -25,8 +25,7 @@ parser.add_argument('--layers', type=int, default=None)
 parser.add_argument('--random', dest='pretrained', action='store_false')
 
 # Images
-parser.add_argument('--init-img', type=str, default='content',
-                    choices=['content', 'random'])
+parser.add_argument('--init-img', type=str, default='random')
 parser.add_argument('--style', type=str)
 parser.add_argument('--content', type=str, default=None)
 
