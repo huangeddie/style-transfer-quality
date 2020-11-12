@@ -47,6 +47,5 @@ def get_layers(args):
             for module in layer.modules():
                 if hasattr(module, 'inplace'):
                     module.inplace = False
-                assert module.requires_grad == False
 
     return style_layers, content_layers
