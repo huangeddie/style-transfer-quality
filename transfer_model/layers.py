@@ -34,7 +34,7 @@ class StyleLayerKernel(nn.Module):
 
 
 class StyleLayerDisc(nn.Module):
-    def __init__(self, mode, cnn_chunk, out_c, k, h_dim=256):
+    def __init__(self, mode, cnn_chunk, out_c, k, h_dim=512):
         super().__init__()
 
         self.conv = cnn_chunk
