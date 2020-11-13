@@ -24,14 +24,14 @@ class TransferModel(nn.Module):
             assert style_feat.requires_grad == False
 
             if self.layer_type == 'disc':
-                main.append(layers.StyleLayerDisc(self.disc_mode, cnn_layer, style_feat.shape[1], args.sample_size,
+                main.append(layers.StyleLayerDisc(self.disc_mode, cnn_layer, style_feat.shape[1], args.samples,
                                                   args.disc_hdim))
             else:
                 assert self.layer_type == 'kernel'
-                assert args.sample_size is not None
+                assert args.samples is not None
                 kernel = kernels.kernel_map[args.distance]
                 main.append(layers.StyleLayerKernel(cnn_layer, style_feat, kernel,
-                                                    args.sample_size))
+                                                    args.samples))
         self.style = nn.Sequential(*main)
 
     def configure_content(self, content_layers, content_img):
