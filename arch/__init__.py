@@ -5,13 +5,13 @@ from arch import layers, kernels
 
 
 class TransferModel(nn.Module):
-    def __init__(self, style_layers, style_img, distance, sample_size=None):
+    def __init__(self, args, style_layers, style_img):
         super().__init__()
 
         self.disc_mode = None
-        if distance.startswith('disc-'):
+        if args.distance.startswith('disc-'):
             self.layer_type = 'disc'
-            self.disc_mode = distance.split('disc-')[-1]
+            self.disc_mode = args.distance.split('disc-')[-1]
         else:
             self.layer_type = 'kernel'
 
@@ -24,13 +24,14 @@ class TransferModel(nn.Module):
             assert style_feat.requires_grad == False
 
             if self.layer_type == 'disc':
-                main.append(layers.StyleLayerDisc(self.disc_mode, cnn_layer, style_feat.shape[1], sample_size))
+                main.append(layers.StyleLayerDisc(self.disc_mode, cnn_layer, style_feat.shape[1], args.sample_size,
+                                                  args.disc_hdim))
             else:
                 assert self.layer_type == 'kernel'
-                assert sample_size is not None
-                kernel = kernels.kernel_map[distance]
+                assert args.sample_size is not None
+                kernel = kernels.kernel_map[args.distance]
                 main.append(layers.StyleLayerKernel(cnn_layer, style_feat, kernel,
-                                                    sample_size))
+                                                    args.sample_size))
         self.style = nn.Sequential(*main)
 
     def configure_content(self, content_layers, content_img):
@@ -75,7 +76,7 @@ class TransferModel(nn.Module):
 
 def make_model(args, style_layers, content_layers, style_img, content_img):
     # Initialize model
-    model = TransferModel(style_layers, style_img, args.distance, args.samples).to(args.device)
+    model = TransferModel(args, style_layers, style_img).to(args.device)
 
     # Freeze CNN
     for params in model.conv_parameters():

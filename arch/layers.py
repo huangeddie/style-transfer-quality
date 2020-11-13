@@ -34,7 +34,7 @@ class StyleLayerKernel(nn.Module):
 
 
 class StyleLayerDisc(nn.Module):
-    def __init__(self, mode, cnn_chunk, out_c, k, h_dim=512):
+    def __init__(self, mode, cnn_chunk, out_c, k, h_dim):
         super().__init__()
 
         self.conv = cnn_chunk
@@ -43,7 +43,6 @@ class StyleLayerDisc(nn.Module):
 
         # Discriminator
         self.disc = nn.Sequential(
-            nn.Tanh(),
             nn.Linear(out_c, h_dim),
             nn.ReLU(),
             nn.Linear(h_dim, h_dim),
