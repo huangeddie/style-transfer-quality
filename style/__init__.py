@@ -1,16 +1,8 @@
-from IPython import display
-from ipywidgets import Output
 from torch import optim
 from torchvision.transforms import functional as F
 from tqdm.auto import tqdm
 
 from style import steps
-
-
-def display_torch_img(gen_img, out):
-    with out:
-        display.clear_output()
-        display.display(F.to_pil_image(gen_img.squeeze(0)).resize((128, 128)))
 
 
 def get_optimizers(model, gen_img, args):
@@ -44,8 +36,6 @@ def transfer(args, gen_img, style_img, model):
 
     # Train
     pbar = tqdm(range(0, args.steps), 'Style Transfer')
-    out = Output()
-    display.display(out)
     gen_hist = []
     try:
         for i in pbar:
@@ -68,17 +58,12 @@ def transfer(args, gen_img, style_img, model):
                 pbar_str += f'Disc: {disc_losses[-1]:.1f}'
             pbar.set_postfix_str(pbar_str)
 
-            # Display image?
-            if args.display is not None and i % args.display == 0:
+            # GIF frame
+            if i % args.gif_frame == 0:
                 gen_hist.append(F.to_pil_image(gen_img.squeeze(0)))
-                display_torch_img(gen_img, out)
 
     except KeyboardInterrupt:
         pass
-
-    # Display image?
-    if args.display is not None:
-        display_torch_img(gen_img, out)
 
     # Return losses
     loss_dict = {'style': style_losses}
