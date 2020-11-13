@@ -9,17 +9,17 @@ See the `main.py` for all argument options.
 
 #### Style transfer
 ```python
-python main.py --distance=disc-sn --style=imgs/la_muse.jpg --content=imgs/golden_gate.jpg --device=cuda
+python main.py --distance=disc-wass --style=imgs/la_muse.jpg --content=imgs/golden_gate.jpg --device=cuda
 ```
-Runs style transfer using the spectral norm discriminator from SNGAN to discriminate between the features. 
+Runs style transfer using the discriminator from WGAN-GP to discriminate between the features. 
 The style image and content images are the La Muse painting and a picture of the golden gate bridge respectively. 
 Training is run on a GPU.
 
 #### Style representation
 ```python
-python main.py --distance=disc-sn --style=imgs/starry_night.jpg --device=cuda
+python main.py --distance=disc-wass --style=imgs/starry_night.jpg --device=cuda
 ```
-Creates the style representation of the Starry Night painting using the spectral norm discriminator from SNGAN to discriminate between the features.
+Creates the style representation of the Starry Night painting using the discriminator from WGAN-GP to discriminate between the features.
 Training is run on a GPU.
 
 ## Style distances
@@ -34,22 +34,12 @@ The code supports different types of style distances:
 * `gram`: Square error between the gramian matrices. This is the original method of NST by Gatys et. al.
 
 ## Abstract
-Neural style transfer (NST) is a powerful image generation technique that uses a convolutional neural network (CNN) to merge the content of one image with the style of another. Contemporary methods of NST use first or second order statistics of the CNN's features to achieve transfers with relatively little computational cost. However, these methods cannot fully extract the style from the CNN's features. We present a new algorithm for style transfer that fully extracts the style from the features by redefining the style loss as the Wasserstein distance between the distribution of features. Thus, we set a new standard in style transfer quality. In addition, we state two important interpretations of NST. The first is a re-emphasis from Li et al., which states that style is simply the distribution of features. The second states that NST is a type of generative adversarial network (GAN) problem.
+We present a new algorithm for neural style transfer (NST) that fully extracts the style by dynamically generating the style loss with a neural network discriminator. The discriminator is constantly trained to discriminate between the style and generated feature distributions. 
 
-## Paper
-Huang, Eddie and Sahil Gupta. “Style is a Distribution of Features.” (2020).
+Contemporary methods of NST use first or second order statistics of a convolutional neural network's (CNN) features to discriminate between the two feature distributions. These statistics are computationally cheap, which makes these methods relatively fast. However, they cannot fully discriminate between the two image's feature distributions. Thus the generated image cannot be optimized to fully extract the style. 
 
-[Arxiv](https://arxiv.org/abs/2007.13010)
+Compared to contemporary methods, our method yields significantly higher quality style transfers. Our use of discriminators also suggests that NST can be viewed as a type of GAN problem.
 
-If you find this code useful in your research, please consider citing:
-```
-@article{huang2020style,
-  title={Style is a Distribution of Features},
-  author={Huang, Eddie and Gupta, Sahil},
-  journal={arXiv preprint arXiv:2007.13010},
-  year={2020}
-}
-```
 
 # Requirements
 This code uses Python 3

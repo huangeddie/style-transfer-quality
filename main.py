@@ -5,34 +5,38 @@ parser = argparse.ArgumentParser(description='Style Transfer')
 # Style Loss
 parser.add_argument('--distance', type=str, default='disc-wass',
                     choices=['disc-wass', 'disc-sn', 'quad', 'linear', 'gauss', 'norm', 'gram'])
-parser.add_argument('--samples', type=int, default=1024)
+parser.add_argument('--samples', type=int, default=1024,
+                    help='number of features to sample from for each layer per training step. if set to 0, all features are used')
 
-# Transfer
-parser.add_argument('--steps', type=int, default=800, help='num training steps')
+# Training
+parser.add_argument('--steps', type=int, default=1000, help='num training steps')
 parser.add_argument('--imsize', type=int, default=224, help='image size')
 parser.add_argument('--img-lr', type=float, default=1e-2,
                     help='learning rate for image pixels')
 parser.add_argument('--disc-lr', type=float, default=1e-2,
                     help='learning rate for discriminators')
-parser.add_argument('--opt', choices=['adam', 'sgd'], default='adam')
-parser.add_argument('--alpha', type=float, default=0.2, help='alpha')
+parser.add_argument('--opt', choices=['adam', 'sgd'], default='adam', help='optimizer')
+parser.add_argument('--alpha', type=float, default=0.2,
+                    help='style-content balance ratio. larger values weigh style more')
 parser.add_argument('--device', choices=['cuda', 'cpu'], default='cuda')
 
 # CNN
 parser.add_argument('--cnn', type=str, default='vgg19-bn',
                     choices=['vgg19-bn', 'vgg19-bn-relu', 'vgg19', 'vgg19-relu', 'resnet18', 'dense121'])
-parser.add_argument('--layers', type=int, default=None)
-parser.add_argument('--disc-hdim', type=int, default=512)
+parser.add_argument('--layers', type=int, default=None, help='number of layers to. should be within [0, 5]')
+parser.add_argument('--disc-hdim', type=int, default=512, help='dimension of the hidden layers in the discriminator')
 parser.add_argument('--random', dest='pretrained', action='store_false')
 
 # Images
-parser.add_argument('--init-img', type=str, default='random')
-parser.add_argument('--style', type=str)
-parser.add_argument('--content', type=str, default=None)
+parser.add_argument('--init-img', type=str, default='random',
+                    help='how to initialize the generated image. can be one of [random, content, <path to image>]')
+parser.add_argument('--style', type=str, help='path to style image')
+parser.add_argument('--content', type=str, default=None, help='optional path to content image')
 
 # Output
-parser.add_argument('--out-dir', type=str, default='out/')
-parser.add_argument('--gif-frame', type=int, default=100)
+parser.add_argument('--out-dir', type=str, default='out/', help='directory to save all work')
+parser.add_argument('--gif-frame', type=int, default=100,
+                    help='interval to save the generated image w.r.t to the training steps to make a GIF of the style transfer')
 
 import os
 import utils
