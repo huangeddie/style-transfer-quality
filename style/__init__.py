@@ -1,6 +1,6 @@
 from torch import optim
 from torchvision.transforms import functional as F
-from tqdm.auto import tqdm
+from tqdm import tqdm
 
 from style import steps
 
