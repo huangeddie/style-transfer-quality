@@ -7,19 +7,19 @@ Performs style transfer by using a neural network to discriminate between the st
 ## Example usage
 See the `main.py` for all argument options.
 
+#### Style representation
+```python
+python main.py --distance=disc-wass --style=imgs/starry_night.jpg --device=cuda
+```
+Creates the style representation of the Starry Night painting using the discriminator from WGAN-GP to discriminate between the features.
+Training is run on a GPU.
+
 #### Style transfer
 ```python
 python main.py --distance=disc-wass --style=imgs/la_muse.jpg --content=imgs/golden_gate.jpg --device=cuda
 ```
 Runs style transfer using the discriminator from WGAN-GP to discriminate between the features. 
 The style image and content images are the La Muse painting and a picture of the golden gate bridge respectively. 
-Training is run on a GPU.
-
-#### Style representation
-```python
-python main.py --distance=disc-wass --style=imgs/starry_night.jpg --device=cuda
-```
-Creates the style representation of the Starry Night painting using the discriminator from WGAN-GP to discriminate between the features.
 Training is run on a GPU.
 
 ## Style distances
