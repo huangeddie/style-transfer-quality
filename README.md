@@ -36,10 +36,9 @@ The code supports different types of style distances:
 ## Abstract
 We present a new algorithm for neural style transfer (NST) that fully extracts the style by dynamically generating the style loss with a neural network discriminator. The discriminator is constantly trained to discriminate between the style and generated feature distributions. 
 
-Contemporary methods of NST use first or second order statistics of a convolutional neural network's (CNN) features to discriminate between the two feature distributions. These statistics are computationally cheap, which makes these methods relatively fast. However, they cannot fully discriminate between the two image's feature distributions. Thus the generated image cannot be optimized to fully extract the style. 
+Contemporary methods of NST use first or second order statistics for distribution discrimination. While these statistics are computationally cheap and fast, they cannot fully discriminate between the two image's feature distributions. Thus the generated image cannot be optimized to fully extract the style. 
 
-Compared to contemporary methods, our method yields significantly higher quality style transfers. Our use of discriminators also suggests that NST can be viewed as a type of GAN problem.
-
+Compared to contemporary methods, our method yields significantly higher quality style transfers. Our use of discriminators also suggests that NST can be viewed as a type of generative adversarial network (GAN).
 
 # Requirements
 This code uses Python 3
