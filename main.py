@@ -15,6 +15,8 @@ parser.add_argument('--img-lr', type=float, default=1e-2,
                     help='learning rate for image pixels')
 parser.add_argument('--disc-lr', type=float, default=1e-2,
                     help='learning rate for discriminators')
+parser.add_argument('--disc-l2', type=float, default=1e-4,
+                    help='weight decay')
 parser.add_argument('--opt', choices=['adam', 'sgd'], default='adam', help='optimizer')
 parser.add_argument('--alpha', type=float, default=0.2,
                     help='style-content balance ratio. larger values weigh style more. ' \
