@@ -25,8 +25,9 @@ Training is run on a GPU.
 ## Style distances
 The code supports different types of style distances:
 > MMD stands for Maximum Mean Discrepancy
-* `disc-sn`: Binary cross entropy using the spectral norm discriminator from SNGAN
-* `disc-wass`: Wasserstein distance implemented using WGAN-GP
+* `sngan`: Binary cross entropy using the spectral norm discriminator from SNGAN
+* `wgan-gp`: Wasserstein distance implemented using WGAN-GP
+* `wgan-sn`: Wasserstein distance using the spectral norm discriminator from SNGAN
 * `quad`: MMD with the quadratic kernel
 * `linear`: MMD with the linear kernel
 * `gauss`: MMD with the Gaussian kernel
