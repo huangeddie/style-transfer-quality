@@ -16,7 +16,7 @@ def get_optimizers(model, gen_img, args):
 
     # Convolutional parameters
     if 'gan' in args.distance:
-        disc_opt = OptClass(model.disc_parameters(), lr=args.disc_lr, **kwargs)
+        disc_opt = OptClass(model.disc_parameters(), lr=args.disc_lr, weight_decay=args.disc_l2, **kwargs)
     else:
         disc_opt = None
 
