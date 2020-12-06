@@ -8,10 +8,9 @@ class TransferModel(nn.Module):
     def __init__(self, args, style_layers, style_img):
         super().__init__()
 
-        self.disc_mode = None
-        if args.distance.startswith('disc-'):
+        self.distance = args.distance
+        if 'gan' in args.distance:
             self.layer_type = 'disc'
-            self.disc_mode = args.distance.split('disc-')[-1]
         else:
             self.layer_type = 'kernel'
 
@@ -24,7 +23,7 @@ class TransferModel(nn.Module):
             assert style_feat.requires_grad == False
 
             if self.layer_type == 'disc':
-                main.append(layers.StyleLayerDisc(self.disc_mode, cnn_layer, style_feat.shape[1], args.samples,
+                main.append(layers.StyleLayerDisc(args.distance, cnn_layer, style_feat.shape[1], args.samples,
                                                   args.disc_hdim))
             else:
                 assert self.layer_type == 'kernel'

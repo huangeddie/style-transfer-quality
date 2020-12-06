@@ -15,7 +15,7 @@ def get_optimizers(model, gen_img, args):
         kwargs = {'momentum': 0.9}
 
     # Convolutional parameters
-    if args.distance.startswith('disc-'):
+    if 'gan' in args.distance:
         disc_opt = OptClass(model.disc_parameters(), lr=args.disc_lr, **kwargs)
     else:
         disc_opt = None
@@ -39,7 +39,7 @@ def transfer(args, gen_img, style_img, model):
     gen_hist = []
     try:
         for i in pbar:
-            if args.distance.startswith('disc-'):
+            if 'gan' in args.distance:
                 # Optimize the discriminator
                 disc_loss = steps.disc_step(model, disc_opt, gen_img, style_img)
                 disc_losses.append(disc_loss)
@@ -54,7 +54,7 @@ def transfer(args, gen_img, style_img, model):
 
             # Progress Bar
             pbar_str = f'Style: {style_losses[-1]:.3} Content: {content_losses[-1]:.3} '
-            if args.distance.startswith('disc-'):
+            if 'gan' in args.distance:
                 pbar_str += f'Disc: {disc_losses[-1]:.1f}'
             pbar.set_postfix_str(pbar_str)
 
@@ -69,7 +69,7 @@ def transfer(args, gen_img, style_img, model):
     loss_dict = {'style': style_losses}
     if args.content is not None:
         loss_dict['content'] = content_losses
-    if args.distance.startswith('disc-'):
+    if 'gan' in args.distance:
         loss_dict['disc'] = disc_losses
 
     return loss_dict, gen_hist

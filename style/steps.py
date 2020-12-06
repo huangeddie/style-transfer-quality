@@ -10,7 +10,7 @@ def disc_step(model, opt, gen_img, style_img):
     d_real, _ = model(style_img)
     d_gen, _ = model(gen_img)
 
-    if model.disc_mode == 'wass':
+    if model.distance.startswith('wgan'):
         # Wasserstein Distance
         dist = d_gen - d_real
 
@@ -20,7 +20,7 @@ def disc_step(model, opt, gen_img, style_img):
 
         loss = dist + 10 * gp
     else:
-        assert model.disc_mode == 'sn', model.disc_mode
+        assert 'sn' in model.distance, model.distance
         # Spectral norm
         real_loss = F.binary_cross_entropy_with_logits(d_real, torch.ones_like(d_real))
         gen_loss = F.binary_cross_entropy_with_logits(d_gen, torch.zeros_like(d_gen))
@@ -36,7 +36,7 @@ def sc_step(model, opt, gen_img, args):
     model.eval()
     opt.zero_grad()
 
-    if args.distance.startswith('disc-'):
+    if 'gan' in args.distance:
         disc_real, content_loss = model(gen_img)
         style_loss = -disc_real
     else:

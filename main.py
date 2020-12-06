@@ -3,8 +3,8 @@ import argparse
 parser = argparse.ArgumentParser(description='Style Transfer')
 
 # Style Loss
-parser.add_argument('--distance', type=str, default='disc-wass',
-                    choices=['disc-wass', 'disc-sn', 'quad', 'linear', 'gauss', 'norm', 'gram'])
+parser.add_argument('--distance', type=str, default='wgan-gp',
+                    choices=['wgan-gp', 'sngan', 'wgan-sn', 'quad', 'linear', 'gauss', 'norm', 'gram'])
 parser.add_argument('--samples', type=int, default=1024,
                     help='number of features to sample from for each layer per training step. if set to 0, all features are used')
 
