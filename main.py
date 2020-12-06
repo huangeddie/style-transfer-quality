@@ -25,7 +25,7 @@ parser.add_argument('--device', choices=['cuda', 'cpu'], default='cuda')
 parser.add_argument('--cnn', type=str, default='vgg19-bn',
                     choices=['vgg19-bn', 'vgg19-bn-relu', 'vgg19', 'vgg19-relu', 'resnet18', 'dense121'])
 parser.add_argument('--layers', type=int, default=None, help='number of layers to. should be within [0, 5]')
-parser.add_argument('--disc-hdim', type=int, default=512, help='dimension of the hidden layers in the discriminator')
+parser.add_argument('--disc-hdim', type=int, default=256, help='dimension of the hidden layers in the discriminator')
 parser.add_argument('--random', dest='pretrained', action='store_false')
 
 # Images
