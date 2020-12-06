@@ -14,11 +14,13 @@ def disc_step(model, opt, gen_img, style_img):
         # Wasserstein Distance
         dist = d_gen - d_real
 
-        # Gradient Penalty
-        x = utils.interpolate(gen_img, style_img)
-        gp = model.disc_gp(x)
-
-        loss = dist + 10 * gp
+        if model.distance.endswith('-gp'):
+            # Gradient Penalty
+            x = utils.interpolate(gen_img, style_img)
+            gp = model.disc_gp(x)
+            loss = dist + 10 * gp
+        else:
+            loss = dist
     else:
         assert 'sn' in model.distance, model.distance
         # Spectral norm
