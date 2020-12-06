@@ -20,6 +20,7 @@ def disc_step(model, opt, gen_img, style_img):
             gp = model.disc_gp(x)
             loss = dist + 10 * gp
         else:
+            assert model.distance.endswith('-sn')
             loss = dist
     else:
         assert 'sn' in model.distance, model.distance

@@ -47,6 +47,8 @@ class StyleLayerDisc(nn.Module):
             nn.ReLU(),
             nn.Linear(h_dim, h_dim),
             nn.ReLU(),
+            nn.Linear(h_dim, h_dim),
+            nn.ReLU(),
             nn.Linear(h_dim, 1),
         )
         if 'sn' in mode:
