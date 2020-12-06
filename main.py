@@ -17,7 +17,8 @@ parser.add_argument('--disc-lr', type=float, default=1e-2,
                     help='learning rate for discriminators')
 parser.add_argument('--opt', choices=['adam', 'sgd'], default='adam', help='optimizer')
 parser.add_argument('--alpha', type=float, default=0.2,
-                    help='style-content balance ratio. larger values weigh style more')
+                    help='style-content balance ratio. larger values weigh style more. ' \
+                         'if doing style representation (no content), then this value is ignored')
 parser.add_argument('--device', choices=['cuda', 'cpu'], default='cuda')
 
 # CNN
