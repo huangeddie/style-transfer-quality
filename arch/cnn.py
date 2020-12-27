@@ -32,8 +32,18 @@ def get_layers(args):
         style_layers = [identity, nn.Sequential(norm, cnn[:1 + relu]), cnn[1 + relu:6 + relu], cnn[6 + relu:11 + relu],
                         cnn[11 + relu:20 + relu], cnn[20 + relu:29 + relu]]
         content_layers = [norm, cnn[:20 + relu]]
-    elif args.cnn == 'resnet18':
-        cnn = models.resnet18(pretrained=args.pretrained).to(args.device).eval()
+    elif args.cnn.startswith('resnet'):
+        if args.cnn == 'resnet18':
+            cnn = models.resnet18(pretrained=args.pretrained).to(args.device).eval()
+        elif args.cnn == 'resnet34':
+            cnn = models.resnet34(pretrained=args.pretrained).to(args.device).eval()
+        elif args.cnn == 'resnet50':
+            cnn = models.resnet50(pretrained=args.pretrained).to(args.device).eval()
+        elif args.cnn == 'resnet101':
+            cnn = models.resnet101(pretrained=args.pretrained).to(args.device).eval()
+        else:
+            assert args.cnn == 'resnet152'
+            cnn = models.resnet152(pretrained=args.pretrained).to(args.device).eval()
         style_layers = [norm, cnn.conv1, nn.Sequential(cnn.bn1, cnn.relu, cnn.maxpool, cnn.layer1), cnn.layer2,
                         cnn.layer3, cnn.layer4]
         content_layers = [norm, cnn.conv1, cnn.bn1, cnn.relu, cnn.maxpool, cnn.layer1, cnn.layer2, cnn.layer3]
