@@ -55,8 +55,11 @@ def gaussian_kernel(x, y):
     return s1 + s2 - 2 * s3
 
 def frechet_kernel(act1, act2):
+    """
+    This kernel is only meant to serve as a metric. It cannot be used as a loss to optimize over.
+    """
     from scipy.linalg import sqrtm
-    act1, act2 = act1.numpy(), act2.numpy()
+    act1, act2 = act1.cpu().numpy(), act2.cpu().numpy()
     
     mu1, sigma1 = act1.mean(axis=0), np.cov(act1, rowvar=False)
     mu2, sigma2 = act2.mean(axis=0), np.cov(act2, rowvar=False)
