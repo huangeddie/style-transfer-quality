@@ -12,30 +12,27 @@ def disc_step(model, opt, gen_img, style_img):
 
     if model.distance.startswith('wgan'):
         # Wasserstein Distance
-        dist = d_real - d_gen
+        dist = d_gen - d_real
 
         if model.distance.endswith('-gp'):
             # Gradient Penalty
             x = utils.interpolate(gen_img, style_img)
             gp = model.disc_gp(x)
-            loss = -dist + 10 * gp
+            loss = dist + 10 * gp
         else:
             assert model.distance.endswith('-sn')
-            loss = -dist
-        metric = dist / gp
+            loss = dist
     else:
         assert 'sn' in model.distance, model.distance
         # Spectral norm
         real_loss = F.binary_cross_entropy_with_logits(d_real, torch.ones_like(d_real))
         gen_loss = F.binary_cross_entropy_with_logits(d_gen, torch.zeros_like(d_gen))
         loss = real_loss + gen_loss
-        metric = loss
 
     loss.backward()
 
     opt.step()
-    
-    return metric.item()
+    return loss.item()
 
 
 def sc_step(model, opt, gen_img, args):
