@@ -54,11 +54,33 @@ def gaussian_kernel(x, y):
 
     return s1 + s2 - 2 * s3
 
+def frechet_kernel(act1, act2):
+    from scipy.linalg import sqrtm
+    act1, act2 = act1.numpy(), act2.numpy()
+    
+    mu1, sigma1 = act1.mean(axis=0), np.cov(act1, rowvar=False)
+    mu2, sigma2 = act2.mean(axis=0), np.cov(act2, rowvar=False)
+
+    # calculate sum squared difference between means
+    ssdiff = np.sum((mu1 - mu2) ** 2)
+
+    # calculate sqrt of product between cov
+    covmean = sqrtm(sigma1.dot(sigma2))
+
+    # check and correct imaginary numbers from sqrt
+    if np.iscomplexobj(covmean):
+        covmean = covmean.real
+
+    # calculate score
+    fid = ssdiff + np.trace(sigma1 + sigma2 - 2.0 * covmean)
+    return fid
+
 
 kernel_map = {
     'quad': quad_kernel,
     'linear': linear_kernel,
     'gauss': gaussian_kernel,
     'norm': norm_kernel,
-    'gram': gram_kernel
+    'gram': gram_kernel,
+    'frechet': frechet_kernel
 }
