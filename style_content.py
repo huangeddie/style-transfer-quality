@@ -19,6 +19,10 @@ def load_feat_model():
         style_layers = ['block1_conv1', 'block2_conv1', 'block3_conv1', 'block4_conv1', 'block5_conv1']
         style_outputs = [vgg.get_layer(name).output for name in style_layers]
         content_outputs = [vgg.get_layer(name).output for name in content_layers]
+    elif FLAGS.feat_model == 'fast':
+        input = tf.keras.Input()
+        x = tf.keras.layers.AveragePooling2D(pool_size=32)(input)
+        style_outputs, content_outputs = [x], [x]
     else:
         raise ValueError(f'unknown feature model: {FLAGS.feat_model}')
     return tf.keras.Model(input, (style_outputs, content_outputs))
