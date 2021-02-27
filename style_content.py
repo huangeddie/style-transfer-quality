@@ -15,5 +15,8 @@ class SCModel(tf.keras.Model):
         self.gen_image = tf.random.uniform(input_shape)
 
     def train_step(self, data):
-        print(f'data: {data}')
-        pass
+        style_image, content_image = data
+        return {'loss': 0}
+
+    def get_gen_image(self):
+        return tf.constant(self.gen_image)

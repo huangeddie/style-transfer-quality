@@ -26,7 +26,7 @@ def main(argv):
     sc_model.compile(tf.keras.optimizers.Adam(FLAGS.lr))
 
     # Run the style model
-    sc_model.fit((style_image, content_image), steps_per_epoch=FLAGS.train_steps)
+    sc_model.fit(style_image, content_image, steps_per_epoch=FLAGS.train_steps)
 
     # Make the generated image
     logging.info('generating style transfer image')
