@@ -1,11 +1,14 @@
 import tensorflow as tf
 from absl import flags
 
+import discriminators as disc
+
 FLAGS = flags.FLAGS
 
 flags.DEFINE_bool('cache_feats', True, 'whether or not to cache the features when performing style transfer')
-flags.DEFINE_enum('feat_model', 'vgg19', ['vgg19'],
+flags.DEFINE_enum('feat_model', 'vgg19', ['vgg19', 'fast'],
                   'whether or not to cache the features when performing style transfer')
+flags.DEFINE_enum('disc', 'bn', ['bn', 'gram', 'm3'], 'type of discrimination to use')
 
 
 def load_feat_model():
@@ -29,7 +32,14 @@ def load_feat_model():
 
 
 def make_discriminator():
-    pass
+    if FLAGS.disc == 'bn':
+        return disc.BatchNormDiscriminator()
+    elif FLAGS.disc == 'gram':
+        return disc.GramianDiscriminator()
+    elif FLAGS.disc == 'm3':
+        return disc.ThirdMomentDiscriminator()
+    else:
+        raise ValueError(f'unknown discriminator: {FLAGS.disc}')
 
 
 class SCModel(tf.keras.Model):
@@ -39,7 +49,9 @@ class SCModel(tf.keras.Model):
         self.discriminator = make_discriminator()
 
     def build(self, input_shape):
-        self.gen_image = tf.random.uniform(input_shape)
+        image_shape = input_shape[0]
+        tf.debugging.assert_rank(image_shape, 4)
+        self.gen_image = self.add_weight('gen_image', image_shape, initializer=tf.keras.initializers.random_uniform)
 
     def cache_feats(self, style_image, content_image):
         self.style_feats = tf.constant(self.feat_model(style_image))
