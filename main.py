@@ -9,6 +9,8 @@ import style_content as sc
 import utils
 
 FLAGS = flags.FLAGS
+flags.DEFINE_float("lr", 1e-3, "learning rate")
+flags.DEFINE_integer("train_steps", 1000, "train steps")
 
 
 def main(argv):
@@ -18,21 +20,21 @@ def main(argv):
     logging.info('loading images')
     style_image, content_image = utils.load_sc_images()
 
-    # Setup generated image
-    gen_image = utils.setup_gen_image()
-
     # Create the style-content model
     logging.info('making style-content model')
-    sc_model = sc.make_sc_model()
+    sc_model = sc.SCModel()
+    sc_model.compile(tf.keras.optimizers.Adam(FLAGS.lr))
 
     # Run the style model
-    logging.info('running style transfer')
-    gen_image = sc_model.transfer(style_image, content_image, gen_image)
-    logging.info('style transfer complete')
+    sc_model.fit((style_image, content_image), steps_per_epoch=FLAGS.train_steps)
+
+    # Make the generated image
+    logging.info('generating style transfer image')
+    gen_image = sc_model.get_gen_image()
 
     # Save the generated image to disk
     gen_path = os.path.join('./out', 'gen.png')
-    tf.keras.preprocessing.image.save_img(gen_path, gen_image, data_format='channels_last')
+    tf.keras.preprocessing.image.save_img(gen_path, tf.squeeze(gen_image, 0), data_format='channels_last')
     logging.info(f'generated image saved to {gen_path}')
 
 
