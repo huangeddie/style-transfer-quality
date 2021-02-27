@@ -10,6 +10,8 @@ import utils
 
 FLAGS = flags.FLAGS
 flags.DEFINE_float("lr", 1e-3, "learning rate")
+flags.DEFINE_float("beta1", 0.5, "learning rate")
+flags.DEFINE_float("beta2", 0.75, "learning rate")
 flags.DEFINE_integer("train_steps", 1000, "train steps")
 
 
@@ -23,7 +25,10 @@ def main(argv):
     # Create the style-content model
     logging.info('making style-content model')
     sc_model = sc.SCModel()
-    sc_model.compile(tf.keras.optimizers.Adam(FLAGS.lr))
+    if FLAGS.cache_feats:
+        logging.info('caching style and content features')
+        sc_model.cache_feats(style_image, content_image)
+    sc_model.compile(tf.keras.optimizers.Adam(FLAGS.lr, FLAGS.beta1, FLAGS.beta2))
 
     # Run the style model
     sc_model.fit(style_image, content_image, steps_per_epoch=FLAGS.train_steps)
