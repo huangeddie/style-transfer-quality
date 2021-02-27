@@ -24,14 +24,14 @@ def main(argv):
 
     # Create the style-content model
     logging.info('making style-content model')
-    sc_model = sc.SCModel()
+    sc_model = sc.SCModel(style_image.shape[1:])
     if FLAGS.cache_feats:
         logging.info('caching style and content features')
         sc_model.cache_feats(style_image, content_image)
     sc_model.compile(tf.keras.optimizers.Adam(FLAGS.lr, FLAGS.beta1, FLAGS.beta2))
 
     # Run the style model
-    sc_model.fit(style_image, content_image, steps_per_epoch=FLAGS.train_steps)
+    sc_model.fit((style_image, content_image), steps_per_epoch=FLAGS.train_steps)
 
     # Make the generated image
     logging.info('generating style transfer image')

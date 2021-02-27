@@ -11,6 +11,7 @@ class TestUtils(absltest.TestCase):
     def test_load_sc_images(self):
         FLAGS(['', '--style_image=../imgs/starry_night.jpg'])
         style_image, content_image = utils.load_sc_images()
+        self.assertEqual(style_image.shape, content_image.shape)
 
         tf.debugging.assert_rank(style_image, 4)
         tf.debugging.assert_rank(content_image, 4)
