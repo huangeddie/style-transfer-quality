@@ -1,14 +1,34 @@
 import tensorflow as tf
 from absl import flags
+from tensorflow.keras import mixed_precision
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_string("style_image", None, "path to the style image")
-flags.DEFINE_string("content_image", None, "path to the content image")
-flags.DEFINE_integer("imsize", None, "image size")
+flags.DEFINE_string('style_image', None, 'path to the style image')
+flags.DEFINE_string('content_image', None, 'path to the content image')
+flags.DEFINE_integer('imsize', None, 'image size')
+
+flags.DEFINE_bool('tpu', True, 'whether or not to use a tpu')
+flags.DEFINE_enum('policy', 'float32', ['float32', 'mixed_bfloat16'], 'floating point precision policy')
 
 # Required flag.
-flags.mark_flag_as_required("style_image")
+flags.mark_flag_as_required('style_image')
+
+
+def setup():
+    if FLAGS.tpu:
+        resolver = tf.distribute.cluster_resolver.TPUClusterResolver()
+        tf.config.experimental_connect_to_cluster(resolver)
+        tf.tpu.experimental.initialize_tpu_system(resolver)
+        strategy = tf.distribute.TPUStrategy(resolver)
+    else:
+        strategy = tf.distribute.get_strategy()
+
+    # Policy
+    policy = mixed_precision.Policy(FLAGS.policy)
+    mixed_precision.set_global_policy(policy)
+
+    return strategy
 
 
 def load_sc_images():

@@ -9,12 +9,11 @@ FLAGS = flags.FLAGS
 
 class TestModel(absltest.TestCase):
     def test_model_train_step(self):
-        FLAGS(['', '--style_image=../imgs/starry_night.jpg', '--feat_model=fast'])
+        FLAGS(['', '--feat_model=fast'])
         sc_model = sc.SCModel([32, 32, 3])
         # Random uniform doesn't support uint8
         x = tf.random.uniform([1, 32, 32, 3], maxval=255, dtype=tf.int32)
         y = tf.random.uniform([1, 32, 32, 3], maxval=255, dtype=tf.int32)
-        sc_model((x, y))
         metrics = sc_model.train_step((x, y))
         self.assertIsInstance(metrics, dict)
 
