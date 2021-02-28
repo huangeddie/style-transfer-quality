@@ -48,10 +48,10 @@ class FirstMomentLoss(tf.keras.losses.Loss):
         mu1 = tf.reduce_mean(y_true, axis=1)
         mu2 = tf.reduce_mean(y_pred, axis=1)
 
-        std1 = tf.math.reduce_std(y_true, axis=1)
-        std2 = tf.math.reduce_std(y_pred, axis=1)
+        var1 = tf.math.reduce_variance(y_true, axis=1)
+        var2 = tf.math.reduce_variance(y_pred, axis=1)
 
-        loss = (mu1 - mu2) ** 2 + (std1 - std2) ** 2
+        loss = (mu1 - mu2) ** 2 + (var1 - var2) ** 2
 
         return loss
 
@@ -62,11 +62,11 @@ class ThirdMomentLoss(tf.keras.losses.Loss):
         tf.debugging.assert_rank(feats1, 3)
         tf.debugging.assert_rank(feats2, 3)
 
-        mu1 = tf.reduce_mean(feats1, axis=1, keepdims=True)
-        mu2 = tf.reduce_mean(feats2, axis=1, keepdims=True)
+        mean_loss, mu1, mu2 = self.compute_mean_loss(feats1, feats2)
 
         std1 = tf.math.reduce_std(feats1, axis=1, keepdims=True)
         std2 = tf.math.reduce_std(feats2, axis=1, keepdims=True)
+        std_loss = (std1 - std2) ** 2
 
         z1 = (feats1 - mu1) / (std1 + 1e-5)
         z2 = (feats2 - mu2) / (std2 + 1e-5)
@@ -74,9 +74,17 @@ class ThirdMomentLoss(tf.keras.losses.Loss):
         skew1 = tf.reduce_mean(z1 ** 3, axis=1, keepdims=True)
         skew2 = tf.reduce_mean(z2 ** 3, axis=1, keepdims=True)
 
-        loss = (mu1 - mu2) ** 2 + (std1 - std2) ** 2 + (skew1 - skew2) ** 2
+        skew_loss = (skew1 - skew2) ** 2
+
+        loss = mean_loss + std_loss + skew_loss
 
         return loss
+
+    def compute_mean_loss(self, feats1, feats2):
+        mu1 = tf.reduce_mean(feats1, axis=1, keepdims=True)
+        mu2 = tf.reduce_mean(feats2, axis=1, keepdims=True)
+        mean_loss = (mu1 - mu2) ** 2
+        return mean_loss, mu1, mu2
 
 
 class GramianLoss(tf.keras.losses.Loss):
