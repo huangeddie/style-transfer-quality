@@ -34,7 +34,7 @@ class ThirdMomentLoss(tf.keras.losses.Loss):
         skew1 = tf.reduce_mean((feats1 - mu1) ** 3, keepdims=True) / (std1 + 1e-5) ** 3
         skew2 = tf.reduce_mean((feats2 - mu2) ** 3, keepdims=True) / (std2 + 1e-5) ** 3
 
-        loss = (mu1 - mu2) ** 2 + (std1 - std2) ** 2 + tf.abs(skew1 - skew2) * 1e-20
+        loss = (mu1 - mu2) ** 2 + (std1 - std2) ** 2 + tf.abs(skew1 - skew2) * 1e-15
 
         return loss
 
