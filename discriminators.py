@@ -46,7 +46,7 @@ class GramianLoss(tf.keras.losses.Loss):
         tf.debugging.assert_rank(y_true, 3)
         tf.debugging.assert_rank(y_pred, 3)
 
-        num_locs = tf.shape(y_true[1])
+        num_locs = tf.shape(y_true)[1]
 
         gram_true = tf.linalg.einsum('bnc,bnd->bcd', y_true, y_true) / num_locs
         gram_pred = tf.linalg.einsum('bnc,bnd->bcd', y_pred, y_pred) / num_locs
