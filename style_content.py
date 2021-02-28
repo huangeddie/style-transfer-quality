@@ -5,39 +5,67 @@ import discriminators as disc
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_bool('cache_feats', True, 'whether or not to cache the features when performing style transfer')
 flags.DEFINE_enum('feat_model', 'vgg19', ['vgg19', 'fast'],
                   'whether or not to cache the features when performing style transfer')
-flags.DEFINE_enum('disc', 'bn', ['bn', 'gram', 'm3'], 'type of discrimination to use')
+flags.DEFINE_enum('disc', 'm1', ['m1', 'm2', 'gram', 'm3'], 'type of discrimination to use')
+
+class FlattenSpatial(tf.keras.layers.Layer):
+    """
+    Assumes channel last input
+    """
+    def call(self, inputs, **kwargs):
+        tf.debugging.assert_rank(inputs, 4)
+        input_shape = tf.shape(inputs)
+        bsz, feat_dim = input_shape[0], input_shape[-1]
+        return tf.reshape(inputs, [bsz, -1, feat_dim])
 
 
 def load_feat_model(input_shape):
+    flatten_spatial = FlattenSpatial()
     if FLAGS.feat_model == 'vgg19':
-        input = tf.keras.Input(input_shape)
-        x = tf.keras.applications.vgg19.preprocess_input(input)
-        vgg = tf.keras.applications.VGG19(input_tensor=x, include_top=False)
+        style_input = tf.keras.Input(input_shape)
+        content_input = tf.keras.Input(input_shape)
+
+        preprocess_fn = tf.keras.applications.vgg19.preprocess_input
+        vgg = tf.keras.applications.VGG19(include_top=False)
         vgg.trainable = False
 
         content_layers = ['block5_conv2']
         style_layers = ['block1_conv1', 'block2_conv1', 'block3_conv1', 'block4_conv1', 'block5_conv1']
-        style_outputs = [vgg.get_layer(name).output for name in style_layers]
-        content_outputs = [vgg.get_layer(name).output for name in content_layers]
+        vgg_style_outputs = [flatten_spatial(vgg.get_layer(name).output) for name in style_layers]
+        vgg_content_outputs = [flatten_spatial(vgg.get_layer(name).output) for name in content_layers]
+
+        vgg_style = tf.keras.Model(vgg.input, vgg_style_outputs)
+        vgg_content = tf.keras.Model(vgg.input, vgg_content_outputs)
+
+        x = preprocess_fn(style_input)
+        style_output = vgg_style(x)
+        style_model = tf.keras.Model(style_input, style_output)
+
+        x = preprocess_fn(content_input)
+        content_output = vgg_content(x)
+        content_model = tf.keras.Model(content_input, content_output)
     elif FLAGS.feat_model == 'fast':
-        input = tf.keras.Input(input_shape)
-        x = tf.keras.layers.AveragePooling2D(pool_size=32)(input)
-        style_outputs, content_outputs = [x], [x]
+        style_input = tf.keras.Input(input_shape)
+        content_input = tf.keras.Input(input_shape)
+        avg_pool = tf.keras.layers.AveragePooling2D(pool_size=4)
+
+        style_model = tf.keras.Model(style_input, [flatten_spatial(avg_pool(style_input))])
+        content_model = tf.keras.Model(content_input, [flatten_spatial(avg_pool(content_input))])
     else:
         raise ValueError(f'unknown feature model: {FLAGS.feat_model}')
-    return tf.keras.Model(input, (style_outputs, content_outputs))
+
+    return tf.keras.Model([style_model.input, content_model.input],
+                          {'style': style_model.outputs, 'content': content_model.outputs})
 
 
 def make_discriminator():
-    if FLAGS.disc == 'bn':
-        return disc.BatchNormDiscriminator()
+    if FLAGS.disc == 'm1':
+        return disc.FirstMomentLoss()
     elif FLAGS.disc == 'gram':
-        return disc.GramianDiscriminator()
+        return disc.GramianLoss()
     elif FLAGS.disc == 'm3':
-        return disc.ThirdMomentDiscriminator()
+        return disc.ThirdMomentLoss()
     else:
         raise ValueError(f'unknown discriminator: {FLAGS.disc}')
 
@@ -49,63 +77,36 @@ class SCModel(tf.keras.Model):
         self.discriminator = make_discriminator()
 
     def build(self, input_shape):
-        assert isinstance(input_shape, tuple)
         assert len(input_shape) == 2
-        image_shape = input_shape[0]
-        assert image_shape == input_shape[1]
-        assert len(image_shape) == 4
-        self.gen_image = self.add_weight('gen_image', image_shape, initializer=tf.keras.initializers.random_uniform)
+        assert input_shape[0] == input_shape[1]
+        self.gen_image = self.add_weight('gen_image', input_shape[0],
+                                         initializer=tf.keras.initializers.RandomUniform(minval=0, maxval=255))
 
     def call(self, inputs, training=None, mask=None):
-        style_image, content_image = inputs
-        style_feats, _ = self.feat_model(style_image)
-        _, content_feats = self.feat_model(style_image)
-        return style_feats, content_feats
-
-    def cache_feats(self, style_image, content_image):
-        style_feats, content_feats = self((style_image, content_image))
-        self.style_feats = [tf.constant(feats) for feats in style_feats]
-        self.content_feats = [tf.constant(feats) for feats in content_feats]
+        return self.feat_model(inputs)
 
     def train_step(self, data):
-
-        # Get style and content features
-        if hasattr(self, 'style_feats') and hasattr(self, 'content_feats'):
-            style_feats, content_feats = self.style_feats, self.content_feats
-        else:
-            style_feats, content_feats = self(data)
+        _, feats = data
 
         with tf.GradientTape() as tape:
             # Compute generated features
-            gen_style_feats, gen_content_feats = self.feat_model(self.gen_image)
+            gen_feats = self.feat_model((self.gen_image, self.gen_image))
 
-            # Discriminate between style and gen features
-            style_loss = self.discriminator((style_feats, gen_style_feats))
-
-            # Discriminate between content and gen features
-            if FLAGS.content_image is not None:
-                content_loss = tf.keras.losses.mean_squared_error(gen_content_feats, )
-            else:
-                content_loss = 0
-
-            # Gradient descent over the discrimination loss
-            style_loss = tf.nn.compute_average_loss(style_loss, global_batch_size=FLAGS.bsz)
-            content_loss = tf.nn.compute_average_loss(content_loss, global_batch_size=FLAGS.bsz)
-            loss = style_loss + content_loss
+            # Compute the loss value
+            # (the loss function is configured in `compile()`)
+            loss = self.compiled_loss(feats, gen_feats, regularization_losses=self.losses)
 
         # Optimize generated image
-        grad = tape.gradient(loss, self.gen_image.trainable_weights)
-        self.optimizer.apply_gradients(zip(grad, self.gen_image.trainable_weights))
-
-        # Train discriminator
-        d_metrics = self.discriminator.train_step((style_feats, gen_style_feats))
+        grad = tape.gradient(loss, [self.gen_image])
+        self.optimizer.apply_gradients(zip(grad, [self.gen_image]))
+        # Clip to RGB range
+        self.gen_image.assign(tf.clip_by_value(self.gen_image, 0, 255))
 
         # Update metrics
-        self.compiled_metrics.update_state((style_feats, content_feats), (gen_style_feats, gen_content_feats))
+        self.compiled_metrics.update_state(feats, gen_feats)
 
         # Return a dict mapping metric names to current value
-        return {'loss': loss, 'style_loss': style_loss, 'content_loss': content_loss,
-                **d_metrics, **{m.name: m.result() for m in self.metrics}}
+        return {m.name: m.result() for m in self.metrics}
 
     def get_gen_image(self):
-        return tf.constant(self.gen_image)
+        return tf.constant(tf.cast(self.gen_image, tf.uint8))

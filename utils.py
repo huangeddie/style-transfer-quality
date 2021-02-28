@@ -8,7 +8,7 @@ flags.DEFINE_string('style_image', None, 'path to the style image')
 flags.DEFINE_string('content_image', None, 'path to the content image')
 flags.DEFINE_integer('imsize', None, 'image size')
 
-flags.DEFINE_bool('tpu', True, 'whether or not to use a tpu')
+flags.DEFINE_bool('tpu', False, 'whether or not to use a tpu')
 flags.DEFINE_enum('policy', 'float32', ['float32', 'mixed_bfloat16'], 'floating point precision policy')
 
 # Required flag.
@@ -30,7 +30,6 @@ def setup():
 
     return strategy
 
-
 def load_sc_images():
     style_image = tf.image.decode_image(tf.io.read_file(FLAGS.style_image))
     if FLAGS.imsize is not None:
@@ -38,7 +37,7 @@ def load_sc_images():
     style_image = tf.image.convert_image_dtype(style_image, tf.float32)
     style_image = tf.expand_dims(style_image, 0)
 
-    content_image = tf.ones_like(style_image) * float('nan')
+    content_image = style_image
     if FLAGS.content_image is not None:
         content_image = tf.image.decode_image(tf.io.read_file(FLAGS.content_image))
         if FLAGS.imsize is not None:

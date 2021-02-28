@@ -1,27 +1,26 @@
 import tensorflow as tf
 
 
-class BatchNormDiscriminator(tf.keras.Model):
-    def train_step(self, data):
-        return {}
+class FirstMomentLoss(tf.keras.losses.Loss):
 
-    def call(self, inputs):
-        feats1, feats2 = inputs
+    def call(self, y_true, y_pred):
+        tf.debugging.assert_rank(y_true, 3)
+        tf.debugging.assert_rank(y_pred, 3)
 
-        mu1 = tf.reduce_mean(feats1, axis=1)
-        mu2 = tf.reduce_mean(feats2, axis=1)
+        mu1 = tf.reduce_mean(y_true, axis=1)
+        mu2 = tf.reduce_mean(y_pred, axis=1)
 
-        std1 = tf.math.reduce_std(feats1, axis=1)
-        std2 = tf.math.reduce_std(feats2, axis=1)
+        std1 = tf.math.reduce_std(y_true, axis=1)
+        std2 = tf.math.reduce_std(y_pred, axis=1)
 
         loss = (mu1 - mu2) ** 2 + (std1 - std2) ** 2
 
         return loss
 
 
-class GramianDiscriminator(tf.keras.layers.Layer):
+class ThirdMomentLoss(tf.keras.losses.Loss):
     pass
 
 
-class ThirdMomentDiscriminator(tf.keras.layers.Layer):
+class GramianLoss(tf.keras.losses.Loss):
     pass
