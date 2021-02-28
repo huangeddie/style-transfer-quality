@@ -25,16 +25,16 @@ def load_feat_model(input_shape):
         content_input = tf.keras.Input(input_shape)
 
         preprocess_fn = tf.keras.applications.vgg19.preprocess_input
-        vgg = tf.keras.applications.VGG19(include_top=False)
-        vgg.trainable = False
+        nasnet = tf.keras.applications.VGG19(include_top=False)
+        nasnet.trainable = False
 
         content_layers = ['block5_conv2']
         style_layers = ['block1_conv1', 'block2_conv1', 'block3_conv1', 'block4_conv1', 'block5_conv1']
-        vgg_style_outputs = [flatten_spatial(vgg.get_layer(name).output) for name in style_layers]
-        vgg_content_outputs = [flatten_spatial(vgg.get_layer(name).output) for name in content_layers]
+        vgg_style_outputs = [flatten_spatial(nasnet.get_layer(name).output) for name in style_layers]
+        vgg_content_outputs = [flatten_spatial(nasnet.get_layer(name).output) for name in content_layers]
 
-        vgg_style = tf.keras.Model(vgg.input, vgg_style_outputs)
-        vgg_content = tf.keras.Model(vgg.input, vgg_content_outputs)
+        vgg_style = tf.keras.Model(nasnet.input, vgg_style_outputs)
+        vgg_content = tf.keras.Model(nasnet.input, vgg_content_outputs)
 
         x = preprocess_fn(style_input)
         style_output = vgg_style(x)
@@ -48,23 +48,23 @@ def load_feat_model(input_shape):
         content_input = tf.keras.Input(input_shape)
 
         preprocess_fn = tf.keras.applications.nasnet.preprocess_input
-        vgg = tf.keras.applications.NASNetLarge(include_top=False)
-        vgg.trainable = False
+        nasnet = tf.keras.applications.NASNetLarge(include_top=False)
+        nasnet.trainable = False
 
         content_layers = ['normal_conv_1_16']
         style_layers = ['normal_conv_1_0', 'normal_conv_1_4', 'normal_conv_1_8', 'normal_conv_1_12', 'normal_conv_1_16']
-        vgg_style_outputs = [flatten_spatial(vgg.get_layer(name).output) for name in style_layers]
-        vgg_content_outputs = [flatten_spatial(vgg.get_layer(name).output) for name in content_layers]
+        nasnet_style_outputs = [flatten_spatial(nasnet.get_layer(name).output) for name in style_layers]
+        nasnet_content_outputs = [flatten_spatial(nasnet.get_layer(name).output) for name in content_layers]
 
-        vgg_style = tf.keras.Model(vgg.input, vgg_style_outputs)
-        vgg_content = tf.keras.Model(vgg.input, vgg_content_outputs)
+        nasnet_style = tf.keras.Model(nasnet.input, nasnet_style_outputs)
+        nasnet_content = tf.keras.Model(nasnet.input, nasnet_content_outputs)
 
         x = preprocess_fn(style_input)
-        style_output = vgg_style(x)
+        style_output = nasnet_style(x)
         style_model = tf.keras.Model(style_input, style_output)
 
         x = preprocess_fn(content_input)
-        content_output = vgg_content(x)
+        content_output = nasnet_content(x)
         content_model = tf.keras.Model(content_input, content_output)
     elif FLAGS.feat_model == 'fast':
         style_input = tf.keras.Input(input_shape)
