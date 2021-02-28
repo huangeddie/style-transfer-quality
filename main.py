@@ -49,9 +49,9 @@ def main(argv):
     gen_image = sc_model.get_gen_image()
 
     # Save the generated image to disk
-    tf.keras.preprocessing.image.save_img(os.path.join('./out', 'style.png'), tf.squeeze(style_image, 0))
-    tf.keras.preprocessing.image.save_img(os.path.join('./out', 'content.png'), tf.squeeze(content_image, 0))
-    tf.keras.preprocessing.image.save_img(os.path.join('./out', 'gen.png'), tf.squeeze(gen_image, 0))
+    tf.keras.preprocessing.image.save_img(os.path.join('./out', 'style.jpg'), tf.squeeze(style_image, 0))
+    tf.keras.preprocessing.image.save_img(os.path.join('./out', 'content.jpg'), tf.squeeze(content_image, 0))
+    tf.keras.preprocessing.image.save_img(os.path.join('./out', 'gen.jpg'), tf.squeeze(gen_image, 0))
     logging.info(f'images saved to ./out')
 
 
