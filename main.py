@@ -15,9 +15,9 @@ import utils
 FLAGS = flags.FLAGS
 
 flags.DEFINE_float('lr', 1e-3, 'learning rate')
-flags.DEFINE_float('beta1', 0.99, 'beta 1')
+flags.DEFINE_float('beta1', 0.9, 'beta 1')
 flags.DEFINE_float('beta2', 0.99, 'beta 2')
-flags.DEFINE_float('epsilon', 1e-1, 'epsilon')
+flags.DEFINE_float('epsilon', 1e-7, 'epsilon')
 
 flags.DEFINE_integer('train_steps', 100, 'train steps')
 
