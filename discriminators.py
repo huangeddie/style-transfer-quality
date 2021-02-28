@@ -3,41 +3,37 @@ import tensorflow as tf
 from style_content import FLAGS
 
 
-class Skewness(tf.keras.metrics.Metric):
-    def __init__(self, name="skewness", **kwargs):
+class SkewLoss(tf.keras.metrics.Metric):
+    def __init__(self, name="skew_loss", **kwargs):
         super().__init__(name=name, **kwargs)
-        self.skew1 = self.add_weight(name="skew1", initializer="zeros")
-        self.skew2 = self.add_weight(name="skew2", initializer="zeros")
+        self.skew_loss = self.add_weight(name="skew_loss", initializer="zeros")
 
     def update_state(self, y_true, y_pred, sample_weight=None):
         feats1, feats2 = y_true, y_pred
 
-        mu1 = tf.reduce_mean(feats1, axis=1, keepdims=True)
-        mu2 = tf.reduce_mean(feats2, axis=1, keepdims=True)
+        mu1, var1 = tf.nn.moments(feats1, axes=1)
+        mu2, var2 = tf.nn.moments(feats2, axes=1)
 
-        std1 = tf.math.reduce_std(feats1, axis=1, keepdims=True)
-        std2 = tf.math.reduce_std(feats2, axis=1, keepdims=True)
-
-        z1 = (feats1 - mu1) / (std1 + 1e-5)
-        z2 = (feats2 - mu2) / (std2 + 1e-5)
+        z1 = (feats1 - mu1) * tf.math.rsqrt(var1)
+        z2 = (feats2 - mu2) * tf.math.rsqrt(var2)
 
         skew1 = tf.reduce_mean(z1 ** 3, axis=1, keepdims=True)
         skew2 = tf.reduce_mean(z2 ** 3, axis=1, keepdims=True)
 
+        skew_loss = (skew1 - skew2) ** 2
+
         if sample_weight is not None:
             sample_weight = tf.cast(sample_weight, "float32")
-            skew1 = tf.multiply(skew1, sample_weight)
-            skew2 = tf.multiply(skew2, sample_weight)
+            skew_loss = tf.multiply(skew_loss, sample_weight)
 
-        self.skew1.assign_add(tf.reduce_mean(skew1))
-        self.skew2.assign_add(tf.reduce_mean(skew2))
+        self.skew_loss.assign_add(tf.reduce_mean(skew_loss))
 
     def result(self):
-        return self.skew1
+        return self.skew_loss
 
     def reset_states(self):
         # The state of the metric will be reset at the start of each epoch.
-        self.skew1.assign(0.0)
+        self.skew_loss.assign(0.0)
 
 
 class SecondMomentLoss(tf.keras.losses.Loss):
