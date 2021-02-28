@@ -30,8 +30,11 @@ def main(argv):
     logging.info('making style-content model')
     with strategy.scope():
         sc_model = sc.SCModel(style_image.shape[1:])
+    losses = {'style': disc.FirstMomentLoss()}
+    if FLAGS.content_image is not None:
+        losses['content'] = tf.keras.losses.MeanSquaredError()
     sc_model.compile(tf.keras.optimizers.Adam(FLAGS.lr, FLAGS.beta1, FLAGS.beta2),
-                     loss={'style': disc.FirstMomentLoss(), 'content': tf.keras.losses.MeanSquaredError()})
+                     loss=losses)
 
     # Run the style model
     start_time = datetime.datetime.now()
