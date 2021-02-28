@@ -3,6 +3,43 @@ import tensorflow as tf
 from style_content import FLAGS
 
 
+class Skewness(tf.keras.metrics.Metric):
+    def __init__(self, name="skewness", **kwargs):
+        super().__init__(name=name, **kwargs)
+        self.skew1 = self.add_weight(name="skew1", initializer="zeros")
+        self.skew2 = self.add_weight(name="skew2", initializer="zeros")
+
+    def update_state(self, y_true, y_pred, sample_weight=None):
+        feats1, feats2 = y_true, y_pred
+
+        mu1 = tf.reduce_mean(feats1, axis=1, keepdims=True)
+        mu2 = tf.reduce_mean(feats2, axis=1, keepdims=True)
+
+        std1 = tf.math.reduce_std(feats1, axis=1, keepdims=True)
+        std2 = tf.math.reduce_std(feats2, axis=1, keepdims=True)
+
+        z1 = (feats1 - mu1) / (std1 + 1e-5)
+        z2 = (feats2 - mu2) / (std2 + 1e-5)
+
+        skew1 = z1 ** 3
+        skew2 = z2 ** 3
+
+        if sample_weight is not None:
+            sample_weight = tf.cast(sample_weight, "float32")
+            skew1 = tf.multiply(skew1, sample_weight)
+            skew2 = tf.multiply(skew2, sample_weight)
+
+        self.skew1.assign_add(tf.reduce_mean(skew1))
+        self.skew2.assign_add(tf.reduce_mean(skew2))
+
+    def result(self):
+        return self.skew1
+
+    def reset_states(self):
+        # The state of the metric will be reset at the start of each epoch.
+        self.skew1.assign(0.0)
+
+
 class FirstMomentLoss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
         tf.debugging.assert_rank(y_true, 3)
@@ -31,10 +68,13 @@ class ThirdMomentLoss(tf.keras.losses.Loss):
         std1 = tf.math.reduce_std(feats1, axis=1, keepdims=True)
         std2 = tf.math.reduce_std(feats2, axis=1, keepdims=True)
 
-        skew1 = tf.reduce_mean((feats1 - mu1) ** 3, keepdims=True) / (std1 + 1e-5) ** 3
-        skew2 = tf.reduce_mean((feats2 - mu2) ** 3, keepdims=True) / (std2 + 1e-5) ** 3
+        z1 = (feats1 - mu1) / (std1 + 1e-5)
+        z2 = (feats2 - mu2) / (std2 + 1e-5)
 
-        loss = (mu1 - mu2) ** 2 + (std1 - std2) ** 2 + 1e-30 * (skew1 - skew2) ** 2
+        skew1 = tf.reduce_mean(z1 ** 3, axis=1, keepdims=True)
+        skew2 = tf.reduce_mean(z2 ** 3, axis=1, keepdims=True)
+
+        loss = (mu1 - mu2) ** 2 + (std1 - std2) ** 2 + (skew1 - skew2) ** 2
 
         return loss
 
