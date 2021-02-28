@@ -30,7 +30,7 @@ def load_feat_model(input_shape):
         vgg = tf.keras.applications.VGG19(include_top=False)
         vgg.trainable = False
 
-        content_layers = ['block5_conv2']
+        content_layers = ['block5_conv2'] if FLAGS.content_image is not None else []
         style_layers = ['block1_conv1', 'block2_conv1', 'block3_conv1', 'block4_conv1', 'block5_conv1']
         vgg_style_outputs = [flatten_spatial(vgg.get_layer(name).output) for name in style_layers]
         vgg_content_outputs = [flatten_spatial(vgg.get_layer(name).output) for name in content_layers]
