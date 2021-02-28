@@ -8,6 +8,8 @@ flags.DEFINE_string('style_image', None, 'path to the style image')
 flags.DEFINE_string('content_image', None, 'path to the content image')
 flags.DEFINE_integer('imsize', None, 'image size')
 
+flags.DEFINE_integer('verbose', 0, 'verbosity')
+
 flags.DEFINE_bool('tpu', False, 'whether or not to use a tpu')
 flags.DEFINE_enum('policy', 'float32', ['float32', 'mixed_bfloat16'], 'floating point precision policy')
 
