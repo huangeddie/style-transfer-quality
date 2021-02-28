@@ -34,7 +34,7 @@ def main(argv):
     if FLAGS.content_image is not None:
         losses['content'] = tf.keras.losses.MeanSquaredError()
     sc_model.compile(tf.keras.optimizers.Adam(FLAGS.lr, FLAGS.beta1, FLAGS.beta2), loss=losses)
-    tf.keras.utils.plot_model(sc_model, './out/model.jpg')
+    tf.keras.utils.plot_model(sc_model.feat_model, './out/feat_model.jpg')
 
     # Run the style model
     start_time = datetime.datetime.now()
