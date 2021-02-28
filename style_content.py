@@ -1,8 +1,6 @@
 import tensorflow as tf
 from absl import flags
 
-import discriminators as disc
-
 FLAGS = flags.FLAGS
 
 flags.DEFINE_enum('feat_model', 'vgg19', ['vgg19', 'nasnetlarge', 'fast'],
@@ -80,17 +78,6 @@ def load_feat_model(input_shape):
 
     return tf.keras.Model([style_model.input, content_model.input],
                           {'style': style_model.outputs, 'content': content_model.outputs})
-
-
-def make_discriminator():
-    if FLAGS.disc == 'm1':
-        return disc.FirstMomentLoss()
-    elif FLAGS.disc == 'gram':
-        return disc.GramianLoss()
-    elif FLAGS.disc == 'm3':
-        return disc.ThirdMomentLoss()
-    else:
-        raise ValueError(f'unknown discriminator: {FLAGS.disc}')
 
 
 class SCModel(tf.keras.Model):

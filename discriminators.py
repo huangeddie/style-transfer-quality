@@ -1,5 +1,7 @@
 import tensorflow as tf
 
+from style_content import FLAGS
+
 
 class FirstMomentLoss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
@@ -41,3 +43,14 @@ class ThirdMomentLoss(tf.keras.losses.Loss):
 
 class GramianLoss(tf.keras.losses.Loss):
     pass
+
+
+def make_discriminator():
+    if FLAGS.disc == 'm1':
+        return FirstMomentLoss()
+    elif FLAGS.disc == 'gram':
+        return GramianLoss()
+    elif FLAGS.disc == 'm3':
+        return ThirdMomentLoss()
+    else:
+        raise ValueError(f'unknown discriminator: {FLAGS.disc}')
