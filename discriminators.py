@@ -42,7 +42,16 @@ class ThirdMomentLoss(tf.keras.losses.Loss):
 
 
 class GramianLoss(tf.keras.losses.Loss):
-    pass
+    def call(self, y_true, y_pred):
+        tf.debugging.assert_rank(y_true, 3)
+        tf.debugging.assert_rank(y_pred, 3)
+
+        num_locs = tf.shape(y_true[1])
+
+        gram_true = tf.linalg.einsum('bnc,bnd->bcd', y_true, y_true) / num_locs
+        gram_pred = tf.linalg.einsum('bnc,bnd->bcd', y_pred, y_pred) / num_locs
+
+        return (gram_true - gram_pred) ** 2
 
 
 def make_discriminator():

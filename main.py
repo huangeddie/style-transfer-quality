@@ -1,3 +1,4 @@
+import datetime
 import os
 
 import tensorflow as tf
@@ -8,12 +9,14 @@ from absl import logging
 import discriminators as disc
 import style_content as sc
 import utils
-import datetime
 
 FLAGS = flags.FLAGS
+
 flags.DEFINE_float('lr', 1e-3, 'learning rate')
-flags.DEFINE_float('beta1', 0.5, 'learning rate')
-flags.DEFINE_float('beta2', 0.75, 'learning rate')
+flags.DEFINE_float('beta1', 0.99, 'beta 1')
+flags.DEFINE_float('beta2', 0.99, 'beta 2')
+flags.DEFINE_float('epsilon', 1e-1, 'epsilon')
+
 flags.DEFINE_integer('train_steps', 100, 'train steps')
 
 
@@ -33,7 +36,7 @@ def main(argv):
     losses = {'style': [disc.make_discriminator() for _ in sc_model.feat_model.output['style']]}
     if FLAGS.content_image is not None:
         losses['content'] = [tf.keras.losses.MeanSquaredError() for _ in sc_model.feat_model.output['content']]
-    sc_model.compile(tf.keras.optimizers.Adam(FLAGS.lr, FLAGS.beta1, FLAGS.beta2), loss=losses)
+    sc_model.compile(tf.keras.optimizers.Adam(FLAGS.lr, FLAGS.beta1, FLAGS.beta2, FLAGS.epsilon), loss=losses)
     tf.keras.utils.plot_model(sc_model.feat_model, './out/feat_model.jpg')
 
     # Run the style model
