@@ -8,6 +8,7 @@ from absl import logging
 import discriminators as disc
 import style_content as sc
 import utils
+import datetime
 
 FLAGS = flags.FLAGS
 flags.DEFINE_float('lr', 1e-3, 'learning rate')
@@ -33,9 +34,13 @@ def main(argv):
                      loss={'style': disc.FirstMomentLoss(), 'content': tf.keras.losses.MeanSquaredError()})
 
     # Run the style model
+    start_time = datetime.datetime.now()
     feats_dict = sc_model((style_image, content_image))
     sc_model.fit((style_image, content_image), feats_dict, epochs=FLAGS.train_steps, batch_size=1,
                  verbose=FLAGS.verbose, callbacks=tf.keras.callbacks.CSVLogger('./out/logs'))
+    end_time = datetime.datetime.now()
+    duration = end_time - start_time
+    logging.info(f'training took {duration}')
 
     # Get generated image
     gen_image = sc_model.get_gen_image()
