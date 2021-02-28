@@ -54,6 +54,9 @@ def main(argv):
     duration = end_time - start_time
     logging.info(f'training took {duration}')
 
+    metrics = sc_model.evaluate((style_image, content_image), feats_dict, return_dict=True)
+    logging.info(metrics)
+
     # Get generated image
     gen_image = sc_model.get_gen_image()
 
