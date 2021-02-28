@@ -75,17 +75,37 @@ class SCModel(tf.keras.Model):
         else:
             style_feats, content_feats = self(data)
 
-        # Get generated features
-        gen_feats = self.feat_model(self.gen_image)
+        with tf.GradientTape() as tape:
+            # Compute generated features
+            gen_style_feats, gen_content_feats = self.feat_model(self.gen_image)
 
-        loss = 0
-        # Discriminate between style and gen features
+            # Discriminate between style and gen features
+            style_loss = self.discriminator((style_feats, gen_style_feats))
 
-        # Discriminate between content and gen features
+            # Discriminate between content and gen features
+            if FLAGS.content_image is not None:
+                content_loss = tf.keras.losses.mean_squared_error(gen_content_feats, )
+            else:
+                content_loss = 0
 
-        # Gradient descent over the discrimination loss
+            # Gradient descent over the discrimination loss
+            style_loss = tf.nn.compute_average_loss(style_loss, global_batch_size=FLAGS.bsz)
+            content_loss = tf.nn.compute_average_loss(content_loss, global_batch_size=FLAGS.bsz)
+            loss = style_loss + content_loss
 
-        return {'loss': loss}
+        # Optimize generated image
+        grad = tape.gradient(loss, self.gen_image.trainable_weights)
+        self.optimizer.apply_gradients(zip(grad, self.gen_image.trainable_weights))
+
+        # Train discriminator
+        d_metrics = self.discriminator.train_step((style_feats, gen_style_feats))
+
+        # Update metrics
+        self.compiled_metrics.update_state((style_feats, content_feats), (gen_style_feats, gen_content_feats))
+
+        # Return a dict mapping metric names to current value
+        return {'loss': loss, 'style_loss': style_loss, 'content_loss': content_loss,
+                **d_metrics, **{m.name: m.result() for m in self.metrics}}
 
     def get_gen_image(self):
         return tf.constant(self.gen_image)

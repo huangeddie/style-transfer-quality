@@ -1,7 +1,10 @@
 import tensorflow as tf
 
 
-class BatchNormDiscriminator(tf.keras.layers.Layer):
+class BatchNormDiscriminator(tf.keras.Model):
+    def train_step(self, data):
+        return {}
+
     def call(self, inputs):
         feats1, feats2 = inputs
 
@@ -11,9 +14,9 @@ class BatchNormDiscriminator(tf.keras.layers.Layer):
         std1 = tf.math.reduce_std(feats1, axis=1)
         std2 = tf.math.reduce_std(feats2, axis=1)
 
-        self.add_loss((mu1 - mu2) ** 2 + (std1 - std2) ** 2)
+        loss = (mu1 - mu2) ** 2 + (std1 - std2) ** 2
 
-        return inputs
+        return loss
 
 
 class GramianDiscriminator(tf.keras.layers.Layer):
