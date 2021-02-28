@@ -1,12 +1,12 @@
 import datetime
 import os
 
+import matplotlib.pyplot as plt
 import pandas as pd
 import tensorflow as tf
 from absl import app
 from absl import flags
 from absl import logging
-import matplotlib.pyplot as plt
 
 import discriminators as disc
 import style_content as sc
@@ -36,9 +36,11 @@ def main(argv):
     with strategy.scope():
         sc_model = sc.SCModel(style_image.shape[1:])
     losses = {'style': [disc.make_discriminator() for _ in sc_model.feat_model.output['style']]}
-    metrics = {'style': [disc.SkewLoss() for _ in sc_model.feat_model.output['style']]}
+    metrics = {'style': [disc.SkewLoss() for _ in sc_model.feat_model.output['style']],
+               'content': [[disc.SkewLoss() for _ in sc_model.feat_model.output['content']]]}
     if FLAGS.content_image is not None:
         losses['content'] = [tf.keras.losses.MeanSquaredError() for _ in sc_model.feat_model.output['content']]
+
     sc_model.compile(tf.keras.optimizers.Adam(FLAGS.lr, FLAGS.beta1, FLAGS.beta2, FLAGS.epsilon),
                      loss=losses, metrics=metrics)
     tf.keras.utils.plot_model(sc_model.feat_model, './out/feat_model.jpg')
