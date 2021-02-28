@@ -28,16 +28,13 @@ class ThirdMomentLoss(tf.keras.losses.Loss):
         mu1 = tf.reduce_mean(feats1, axis=1, keepdims=True)
         mu2 = tf.reduce_mean(feats2, axis=1, keepdims=True)
 
-        var1 = tf.math.reduce_variance(feats1, axis=1, keepdims=True)
-        var2 = tf.math.reduce_variance(feats2, axis=1, keepdims=True)
-
         std1 = tf.math.reduce_std(feats1, axis=1, keepdims=True)
         std2 = tf.math.reduce_std(feats2, axis=1, keepdims=True)
 
         skew1 = tf.reduce_mean((feats1 - mu1) ** 3, keepdims=True) / (std1 + 1e-5) ** 3
         skew2 = tf.reduce_mean((feats2 - mu2) ** 3, keepdims=True) / (std2 + 1e-5) ** 3
 
-        loss = tf.abs(mu1 - mu2) + tf.abs(var1 - var2) + tf.abs(skew1 - skew2)
+        loss = (mu1 - mu2) ** 2 + (std1 - std2) ** 2 + tf.abs(skew1 - skew2)
 
         return loss
 
