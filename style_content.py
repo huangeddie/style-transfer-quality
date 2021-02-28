@@ -74,7 +74,6 @@ class SCModel(tf.keras.Model):
     def __init__(self, input_shape, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.feat_model = load_feat_model(input_shape)
-        self.discriminator = make_discriminator()
 
     def build(self, input_shape):
         assert len(input_shape) == 2
