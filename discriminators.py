@@ -40,16 +40,14 @@ class Skewness(tf.keras.metrics.Metric):
         self.skew1.assign(0.0)
 
 
-class FirstMomentLoss(tf.keras.losses.Loss):
+class SecondMomentLoss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
-        tf.debugging.assert_rank(y_true, 3)
-        tf.debugging.assert_rank(y_pred, 3)
+        feats1, feats2 = y_true, y_pred
+        tf.debugging.assert_rank(feats1, 3)
+        tf.debugging.assert_rank(feats2, 3)
 
-        mu1 = tf.reduce_mean(y_true, axis=1)
-        mu2 = tf.reduce_mean(y_pred, axis=1)
-
-        var1 = tf.math.reduce_variance(y_true, axis=1)
-        var2 = tf.math.reduce_variance(y_pred, axis=1)
+        mu1, var1 = tf.nn.moments(feats1, axes=1)
+        mu2, var2 = tf.nn.moments(feats2, axes=1)
 
         loss = (mu1 - mu2) ** 2 + (var1 - var2) ** 2
 
@@ -62,29 +60,18 @@ class ThirdMomentLoss(tf.keras.losses.Loss):
         tf.debugging.assert_rank(feats1, 3)
         tf.debugging.assert_rank(feats2, 3)
 
-        mean_loss, mu1, mu2 = self.compute_mean_loss(feats1, feats2)
+        mu1, var1 = tf.nn.moments(feats1, axes=1)
+        mu2, var2 = tf.nn.moments(feats2, axes=1)
 
-        std1 = tf.math.reduce_std(feats1, axis=1, keepdims=True)
-        std2 = tf.math.reduce_std(feats2, axis=1, keepdims=True)
-        std_loss = (std1 - std2) ** 2
-
-        z1 = (feats1 - mu1) / (std1 + 1e-5)
-        z2 = (feats2 - mu2) / (std2 + 1e-5)
+        z1 = (feats1 - mu1) * tf.math.rsqrt(var1)
+        z2 = (feats2 - mu2) * tf.math.rsqrt(var2)
 
         skew1 = tf.reduce_mean(z1 ** 3, axis=1, keepdims=True)
         skew2 = tf.reduce_mean(z2 ** 3, axis=1, keepdims=True)
 
-        skew_loss = (skew1 - skew2) ** 2
-
-        loss = mean_loss + std_loss + skew_loss
+        loss = (mu1 - mu2) ** 2 + (var1 - var2) ** 2 + (skew1 - skew2) ** 2
 
         return loss
-
-    def compute_mean_loss(self, feats1, feats2):
-        mu1 = tf.reduce_mean(feats1, axis=1, keepdims=True)
-        mu2 = tf.reduce_mean(feats2, axis=1, keepdims=True)
-        mean_loss = (mu1 - mu2) ** 2
-        return mean_loss, mu1, mu2
 
 
 class GramianLoss(tf.keras.losses.Loss):
@@ -101,8 +88,8 @@ class GramianLoss(tf.keras.losses.Loss):
 
 
 def make_discriminator():
-    if FLAGS.disc == 'm1':
-        return FirstMomentLoss()
+    if FLAGS.disc == 'm2':
+        return SecondMomentLoss()
     elif FLAGS.disc == 'gram':
         return GramianLoss()
     elif FLAGS.disc == 'm3':
