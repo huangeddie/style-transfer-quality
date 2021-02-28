@@ -35,6 +35,7 @@ def main(argv):
         losses['content'] = tf.keras.losses.MeanSquaredError()
     sc_model.compile(tf.keras.optimizers.Adam(FLAGS.lr, FLAGS.beta1, FLAGS.beta2),
                      loss=losses)
+    tf.keras.utils.plot_model(sc_model, './out/model.jpg')
 
     # Run the style model
     start_time = datetime.datetime.now()
