@@ -37,7 +37,7 @@ def main(argv):
     start_time = datetime.datetime.now()
     feats_dict = sc_model((style_image, content_image))
     sc_model.fit((style_image, content_image), feats_dict, epochs=FLAGS.train_steps, batch_size=1,
-                 verbose=FLAGS.verbose, callbacks=tf.keras.callbacks.CSVLogger('./out/logs'))
+                 verbose=FLAGS.verbose, callbacks=tf.keras.callbacks.CSVLogger('./out/logs.csv'))
     end_time = datetime.datetime.now()
     duration = end_time - start_time
     logging.info(f'training took {duration}')
