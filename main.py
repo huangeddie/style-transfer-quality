@@ -30,9 +30,9 @@ def main(argv):
     logging.info('making style-content model')
     with strategy.scope():
         sc_model = sc.SCModel(style_image.shape[1:])
-    losses = {'style': sc.make_discriminator()}
+    losses = {'style': [sc.make_discriminator() for _ in sc_model.feat_model.output['style']]}
     if FLAGS.content_image is not None:
-        losses['content'] = tf.keras.losses.MeanSquaredError()
+        losses['content'] = [tf.keras.losses.MeanSquaredError() for _ in sc_model.feat_model.output['content']]
     sc_model.compile(tf.keras.optimizers.Adam(FLAGS.lr, FLAGS.beta1, FLAGS.beta2), loss=losses)
     tf.keras.utils.plot_model(sc_model.feat_model, './out/feat_model.jpg')
 
