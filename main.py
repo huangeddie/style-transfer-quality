@@ -1,10 +1,12 @@
 import datetime
 import os
 
+import pandas as pd
 import tensorflow as tf
 from absl import app
 from absl import flags
 from absl import logging
+import matplotlib.pyplot as plt
 
 import discriminators as disc
 import style_content as sc
@@ -56,6 +58,11 @@ def main(argv):
     tf.keras.preprocessing.image.save_img(os.path.join('./out', 'content.jpg'), tf.squeeze(content_image, 0))
     tf.keras.preprocessing.image.save_img(os.path.join('./out', 'gen.jpg'), tf.squeeze(gen_image, 0))
     logging.info(f'images saved to ./out')
+
+    # Plot loss
+    logs_df = pd.read_csv('out/logs.csv')
+    logs_df.plot(x='epoch', logy=True)
+    plt.savefig('out/metrics.jpg')
 
 
 if __name__ == '__main__':

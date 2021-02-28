@@ -33,8 +33,8 @@ class ThirdMomentLoss(tf.keras.losses.Loss):
         z1 = (y_true - mu1) / std1
         z2 = (y_true - mu2) / std2
 
-        skew1 = (tf.reduce_mean(z1 ** 3)) ** (1 / 3)
-        skew2 = (tf.reduce_mean(z2 ** 3)) ** (1 / 3)
+        skew1 = (tf.reduce_mean(z1 ** 3))
+        skew2 = (tf.reduce_mean(z2 ** 3))
 
         loss = (mu1 - mu2) ** 2 + (std1 - std2) ** 2 + (skew1 - skew2) ** 2
 
