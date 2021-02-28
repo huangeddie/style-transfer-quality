@@ -21,8 +21,8 @@ class Skewness(tf.keras.metrics.Metric):
         z1 = (feats1 - mu1) / (std1 + 1e-5)
         z2 = (feats2 - mu2) / (std2 + 1e-5)
 
-        skew1 = z1 ** 3
-        skew2 = z2 ** 3
+        skew1 = tf.reduce_mean(z1 ** 3, axis=1, keepdims=True)
+        skew2 = tf.reduce_mean(z2 ** 3, axis=1, keepdims=True)
 
         if sample_weight is not None:
             sample_weight = tf.cast(sample_weight, "float32")
