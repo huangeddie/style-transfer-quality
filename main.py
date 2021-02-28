@@ -35,8 +35,7 @@ def main(argv):
     # Run the style model
     feats_dict = sc_model((style_image, content_image))
     sc_model.fit((style_image, content_image), feats_dict, epochs=FLAGS.train_steps, batch_size=1,
-                 verbose=FLAGS.verbose,
-                 callbacks=tf.keras.callbacks.CSVLogger('./out/logs'))
+                 verbose=FLAGS.verbose, callbacks=tf.keras.callbacks.CSVLogger('./out/logs'))
 
     # Get generated image
     gen_image = sc_model.get_gen_image()
