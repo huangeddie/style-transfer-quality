@@ -1,5 +1,6 @@
 import tensorflow as tf
 from absl import flags
+from absl import logging
 
 FLAGS = flags.FLAGS
 
@@ -88,7 +89,7 @@ class SCModel(tf.keras.Model):
 
     def train_step(self, data):
         images, feats = data
-        print(f'images: {tf.shape(images)}')
+        logging.info(f'images: {tf.shape(images)}')
 
         with tf.GradientTape() as tape:
             # Compute generated features
