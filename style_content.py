@@ -7,34 +7,23 @@ flags.DEFINE_enum('feat_model', 'vgg19', ['vgg19', 'nasnetlarge', 'fast'],
                   'whether or not to cache the features when performing style transfer')
 flags.DEFINE_enum('disc', 'm2', ['m2', 'gram', 'm3'], 'type of discrimination to use')
 
-class FlattenSpatial(tf.keras.layers.Layer):
-    """
-    Assumes channel last input
-    """
-    def call(self, inputs, **kwargs):
-        tf.debugging.assert_rank(inputs, 4)
-        input_shape = tf.shape(inputs)
-        bsz, feat_dim = input_shape[0], input_shape[-1]
-        return tf.reshape(inputs, [bsz, -1, feat_dim])
-
 
 def load_feat_model(input_shape):
-    flatten_spatial = FlattenSpatial()
     if FLAGS.feat_model == 'vgg19':
         style_input = tf.keras.Input(input_shape)
         content_input = tf.keras.Input(input_shape)
 
         preprocess_fn = tf.keras.applications.vgg19.preprocess_input
-        nasnet = tf.keras.applications.VGG19(include_top=False)
-        nasnet.trainable = False
+        vgg19 = tf.keras.applications.VGG19(include_top=False)
+        vgg19.trainable = False
 
         content_layers = ['block5_conv2']
         style_layers = ['block1_conv1', 'block2_conv1', 'block3_conv1', 'block4_conv1', 'block5_conv1']
-        vgg_style_outputs = [flatten_spatial(nasnet.get_layer(name).output) for name in style_layers]
-        vgg_content_outputs = [flatten_spatial(nasnet.get_layer(name).output) for name in content_layers]
+        vgg_style_outputs = [vgg19.get_layer(name).output for name in style_layers]
+        vgg_content_outputs = [vgg19.get_layer(name).output for name in content_layers]
 
-        vgg_style = tf.keras.Model(nasnet.input, vgg_style_outputs)
-        vgg_content = tf.keras.Model(nasnet.input, vgg_content_outputs)
+        vgg_style = tf.keras.Model(vgg19.input, vgg_style_outputs)
+        vgg_content = tf.keras.Model(vgg19.input, vgg_content_outputs)
 
         x = preprocess_fn(style_input)
         style_output = vgg_style(x)
@@ -53,8 +42,8 @@ def load_feat_model(input_shape):
 
         content_layers = ['normal_conv_1_16']
         style_layers = ['normal_conv_1_0', 'normal_conv_1_4', 'normal_conv_1_8', 'normal_conv_1_12', 'normal_conv_1_16']
-        nasnet_style_outputs = [flatten_spatial(nasnet.get_layer(name).output) for name in style_layers]
-        nasnet_content_outputs = [flatten_spatial(nasnet.get_layer(name).output) for name in content_layers]
+        nasnet_style_outputs = [nasnet.get_layer(name).output for name in style_layers]
+        nasnet_content_outputs = [nasnet.get_layer(name).output for name in content_layers]
 
         nasnet_style = tf.keras.Model(nasnet.input, nasnet_style_outputs)
         nasnet_content = tf.keras.Model(nasnet.input, nasnet_content_outputs)
@@ -71,13 +60,18 @@ def load_feat_model(input_shape):
         content_input = tf.keras.Input(input_shape)
         avg_pool = tf.keras.layers.AveragePooling2D(pool_size=4)
 
-        style_model = tf.keras.Model(style_input, [flatten_spatial(avg_pool(style_input))])
-        content_model = tf.keras.Model(content_input, [flatten_spatial(avg_pool(content_input))])
+        style_model = tf.keras.Model(style_input, [avg_pool(style_input)])
+        content_model = tf.keras.Model(content_input, [avg_pool(content_input)])
     else:
         raise ValueError(f'unknown feature model: {FLAGS.feat_model}')
 
+    new_style_outputs = [tf.keras.layers.BatchNormalization(scale=False, center=False, momentum=0)(output) for
+                         output in style_model.outputs]
+    new_content_outputs = [tf.keras.layers.BatchNormalization(scale=False, center=False, momentum=0)(output) for
+                           output in content_model.outputs]
+
     return tf.keras.Model([style_model.input, content_model.input],
-                          {'style': style_model.outputs, 'content': content_model.outputs})
+                          {'style': new_style_outputs, 'content': new_content_outputs})
 
 
 class SCModel(tf.keras.Model):
@@ -92,14 +86,14 @@ class SCModel(tf.keras.Model):
                                          initializer=tf.keras.initializers.RandomUniform(minval=0, maxval=255))
 
     def call(self, inputs, training=None, mask=None):
-        return self.feat_model(inputs)
+        return self.feat_model(inputs, training=training)
 
     def train_step(self, data):
         _, feats = data
 
         with tf.GradientTape() as tape:
             # Compute generated features
-            gen_feats = self.feat_model((self.gen_image, self.gen_image))
+            gen_feats = self.feat_model((self.gen_image, self.gen_image), training=False)
 
             # Compute the loss value
             # (the loss function is configured in `compile()`)

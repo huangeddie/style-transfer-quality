@@ -11,14 +11,14 @@ class SkewLoss(tf.keras.metrics.Metric):
     def update_state(self, y_true, y_pred, sample_weight=None):
         feats1, feats2 = y_true, y_pred
 
-        mu1, var1 = tf.nn.moments(feats1, axes=1, keepdims=True)
-        mu2, var2 = tf.nn.moments(feats2, axes=1, keepdims=True)
+        mu1, var1 = tf.nn.moments(feats1, axes=[1, 2], keepdims=True)
+        mu2, var2 = tf.nn.moments(feats2, axes=[1, 2], keepdims=True)
 
         z1 = (feats1 - mu1) * tf.math.rsqrt(var1)
         z2 = (feats2 - mu2) * tf.math.rsqrt(var2)
 
-        skew1 = tf.reduce_mean(z1 ** 3, axis=1, keepdims=True)
-        skew2 = tf.reduce_mean(z2 ** 3, axis=1, keepdims=True)
+        skew1 = tf.reduce_mean(z1 ** 3, axis=[1, 2], keepdims=True)
+        skew2 = tf.reduce_mean(z2 ** 3, axis=[1, 2], keepdims=True)
 
         skew_loss = (skew1 - skew2) ** 2
 
@@ -39,11 +39,9 @@ class SkewLoss(tf.keras.metrics.Metric):
 class SecondMomentLoss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
         feats1, feats2 = y_true, y_pred
-        tf.debugging.assert_rank(feats1, 3)
-        tf.debugging.assert_rank(feats2, 3)
 
-        mu1, var1 = tf.nn.moments(feats1, axes=1, keepdims=True)
-        mu2, var2 = tf.nn.moments(feats2, axes=1, keepdims=True)
+        mu1, var1 = tf.nn.moments(feats1, axes=[1, 2], keepdims=True)
+        mu2, var2 = tf.nn.moments(feats2, axes=[1, 2], keepdims=True)
 
         loss = (mu1 - mu2) ** 2 + (var1 - var2) ** 2
 
@@ -53,17 +51,15 @@ class SecondMomentLoss(tf.keras.losses.Loss):
 class ThirdMomentLoss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
         feats1, feats2 = y_true, y_pred
-        tf.debugging.assert_rank(feats1, 3)
-        tf.debugging.assert_rank(feats2, 3)
 
-        mu1, var1 = tf.nn.moments(feats1, axes=1, keepdims=True)
-        mu2, var2 = tf.nn.moments(feats2, axes=1, keepdims=True)
+        mu1, var1 = tf.nn.moments(feats1, axes=[1, 2], keepdims=True)
+        mu2, var2 = tf.nn.moments(feats2, axes=[1, 2], keepdims=True)
 
         z1 = (feats1 - mu1) * tf.math.rsqrt(var1)
         z2 = (feats2 - mu2) * tf.math.rsqrt(var2)
 
-        skew1 = tf.reduce_mean(z1 ** 3, axis=1, keepdims=True)
-        skew2 = tf.reduce_mean(z2 ** 3, axis=1, keepdims=True)
+        skew1 = tf.reduce_mean(z1 ** 3, axis=[1, 2], keepdims=True)
+        skew2 = tf.reduce_mean(z2 ** 3, axis=[1, 2], keepdims=True)
 
         loss = (mu1 - mu2) ** 2 + (var1 - var2) ** 2 + (skew1 - skew2) ** 2
 

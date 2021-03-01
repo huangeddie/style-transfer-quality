@@ -45,16 +45,19 @@ def main(argv):
                      loss=losses, metrics=metrics)
     tf.keras.utils.plot_model(sc_model.feat_model, './out/feat_model.jpg')
 
+    # Configure batch norm layers to normalize features of the style and content images
+    feats_dict = sc_model((style_image, content_image), training=True)
+    sc_model.feat_model.trainable = False
+
     # Run the style model
     start_time = datetime.datetime.now()
-    feats_dict = sc_model((style_image, content_image))
     sc_model.fit((style_image, content_image), feats_dict, epochs=FLAGS.train_steps, batch_size=1,
                  verbose=FLAGS.verbose, callbacks=tf.keras.callbacks.CSVLogger('./out/logs.csv'))
     end_time = datetime.datetime.now()
     duration = end_time - start_time
     logging.info(f'training took {duration}')
 
-    metrics = sc_model.evaluate((style_image, content_image), feats_dict, return_dict=True)
+    metrics = sc_model.evaluate((style_image, content_image), feats_dict, batch_size=1, return_dict=True)
     logging.info(metrics)
 
     # Get generated image
