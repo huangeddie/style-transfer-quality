@@ -77,8 +77,7 @@ def main(argv):
     duration = end_time - start_time
     logging.info(f'training took {duration}')
 
-    metrics = sc_model.evaluate((style_image, content_image), feats_dict, batch_size=1, return_dict=True)
-    logging.info(metrics)
+    sc_model.evaluate((style_image, content_image), feats_dict, batch_size=1, return_dict=True)
 
     # Get generated image
     gen_image = sc_model.get_gen_image()
@@ -89,8 +88,17 @@ def main(argv):
     tf.keras.preprocessing.image.save_img(os.path.join('./out', 'gen.jpg'), tf.squeeze(gen_image, 0))
     logging.info(f'images saved to ./out')
 
-    # Plot loss
+    # Metrics
     logs_df = pd.read_csv('out/logs.csv')
+
+    # Print contributing loss of each metric
+    last_epoch_logs = logs_df.iloc[-1]
+    logging.info(f"loss: {last_epoch_logs['loss']:.4}")
+    for metric in ['mean', 'var', 'skew']:
+        mean_val = last_epoch_logs.filter(like=metric).sum()
+        logging.info(f'total {metric:.4} loss: {mean_val:.4}')
+
+    # Plot metrics
     logs_df.set_index('epoch')
     f, axes = plt.subplots(1, 4)
     f.set_size_inches(16, 3)
