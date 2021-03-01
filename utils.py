@@ -71,7 +71,6 @@ def plot_metrics(logs_df, filename):
     logs_df.filter(like='skew').plot(logy=True, ax=axes[3])
     f.tight_layout()
     f.savefig(os.path.join('./out', filename))
-    plt.show()
 
 
 def log_metrics(logs_df):
