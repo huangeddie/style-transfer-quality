@@ -17,8 +17,9 @@ import utils
 FLAGS = flags.FLAGS
 
 flags.DEFINE_float('lr', 1e-3, 'learning rate')
-flags.DEFINE_float('beta1', 0.9, 'beta 1')
-flags.DEFINE_float('beta2', 0.99, 'beta 2')
+flags.DEFINE_float('beta1', 0.9, 'beta1')
+flags.DEFINE_float('beta2', 0.99, 'beta2')
+flags.DEFINE_float('epsilon', 1e-5, 'epsilon')
 
 flags.DEFINE_integer('train_steps', 100, 'train steps')
 
@@ -44,7 +45,7 @@ def main(argv):
     if FLAGS.content_image is not None:
         losses['content'] = [tf.keras.losses.MeanSquaredError() for _ in sc_model.feat_model.output['content']]
 
-    sc_model.compile(tfa.optimizers.LAMB(FLAGS.lr, FLAGS.beta1, FLAGS.beta2), loss=losses, metrics=metrics)
+    sc_model.compile(tfa.optimizers.LAMB(FLAGS.lr, FLAGS.beta1, FLAGS.beta2, FLAGS.epsilon), loss=losses, metrics=metrics)
     tf.keras.utils.plot_model(sc_model.feat_model, './out/feat_model.jpg')
 
     # Configure batch norm layers to normalize features of the style and content images
