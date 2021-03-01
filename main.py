@@ -22,8 +22,6 @@ flags.DEFINE_float('epsilon', 1e-5, 'epsilon')
 
 flags.DEFINE_integer('train_steps', 100, 'train steps')
 
-flags.DEFINE_bool('load', False, 'load')
-
 
 def run_style_transfer(strategy, style_image, content_image, loss_key):
     # Create the style-content model
@@ -48,7 +46,7 @@ def run_style_transfer(strategy, style_image, content_image, loss_key):
     logging.info(f'loss function: {loss_key}')
     start_time = datetime.datetime.now()
     sc_model.fit((style_image, content_image), feats_dict, epochs=FLAGS.train_steps, batch_size=1,
-                 verbose=FLAGS.verbose, callbacks=tf.keras.callbacks.CSVLogger('./out/logs.csv', append=FLAGS.load))
+                 verbose=FLAGS.verbose, callbacks=tf.keras.callbacks.CSVLogger(f'./out/{loss_key}_logs.csv'))
     end_time = datetime.datetime.now()
     duration = end_time - start_time
     logging.info(f'training took {duration}')
@@ -58,18 +56,21 @@ def run_style_transfer(strategy, style_image, content_image, loss_key):
 
     # Save the images to disk
     gen_image = sc_model.get_gen_image()
-    for filename, image in [('style.jpg', style_image), ('content.jpg', content_image), (f'{loss_key}.jpg', gen_image)]:
+    for filename, image in [('style.jpg', style_image), ('content.jpg', content_image),
+                            (f'{loss_key}_gen.jpg', gen_image)]:
         tf.keras.preprocessing.image.save_img(os.path.join('./out', filename), tf.squeeze(image, 0))
-    logging.info(f'images saved to ./out')
+    logging.info('images saved to ./out')
 
     # Metrics
-    logs_df = pd.read_csv('out/logs.csv')
+    logs_df = pd.read_csv(f'out/{loss_key}_logs.csv')
 
     # Print contributing loss of each metric
     log_metrics(logs_df)
 
     # Plot metrics
-    plot_metrics(logs_df)
+    plot_metrics(logs_df, filename=f'{loss_key}_plots.jpg')
+
+    logging.info('metrics saved to ./out')
 
 
 def main(argv):

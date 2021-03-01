@@ -1,3 +1,5 @@
+import os
+
 import tensorflow as tf
 from absl import flags, logging
 from matplotlib import pyplot as plt
@@ -61,7 +63,7 @@ def compute_skewness(x, axes):
     return skew
 
 
-def plot_metrics(logs_df):
+def plot_metrics(logs_df, filename):
     logs_df.set_index('epoch')
     f, axes = plt.subplots(1, 4)
     f.set_size_inches(16, 3)
@@ -70,7 +72,8 @@ def plot_metrics(logs_df):
     logs_df.filter(like='var').plot(logy=True, ax=axes[2])
     logs_df.filter(like='skew').plot(logy=True, ax=axes[3])
     f.tight_layout()
-    f.savefig('out/metrics.jpg')
+    f.savefig(os.path.join('./out', filename))
+    plt.show()
 
 
 def log_metrics(logs_df):
