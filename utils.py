@@ -32,6 +32,7 @@ def setup():
 
     return strategy
 
+
 def load_sc_images():
     style_image = tf.image.decode_image(tf.io.read_file(FLAGS.style_image))
     if FLAGS.imsize is not None:
@@ -48,3 +49,12 @@ def load_sc_images():
         content_image = tf.expand_dims(content_image, 0)
 
     return style_image, content_image
+
+
+def compute_skewness(x, axes):
+    mu, var = tf.nn.moments(x, axes=axes, keepdims=True)
+
+    z = (x - mu) * tf.math.rsqrt(var + 1e-3)
+
+    skew = tf.reduce_mean(z ** 3, axis=axes, keepdims=True)
+    return skew

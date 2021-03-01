@@ -80,20 +80,18 @@ class SCModel(tf.keras.Model):
         self.feat_model = load_feat_model(input_shape)
 
     def build(self, input_shape):
-        assert len(input_shape) == 2
-        assert input_shape[0] == input_shape[1]
         self.gen_image = self.add_weight('gen_image', input_shape[0],
                                          initializer=tf.keras.initializers.RandomUniform(minval=0, maxval=255))
 
     def call(self, inputs, training=None, mask=None):
-        return self.feat_model(inputs, training=training)
+        return self.feat_model((self.gen_image, self.gen_image), training=training)
 
     def train_step(self, data):
-        _, feats = data
+        images, feats = data
 
         with tf.GradientTape() as tape:
             # Compute generated features
-            gen_feats = self.feat_model((self.gen_image, self.gen_image), training=False)
+            gen_feats = self(images, training=False)
 
             # Compute the loss value
             # (the loss function is configured in `compile()`)

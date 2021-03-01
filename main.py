@@ -9,7 +9,8 @@ from absl import app
 from absl import flags
 from absl import logging
 
-import discriminators as disc
+import dist_losses
+import dist_metrics
 import style_content as sc
 import utils
 
@@ -35,19 +36,35 @@ def main(argv):
     logging.info('making style-content model')
     with strategy.scope():
         sc_model = sc.SCModel(style_image.shape[1:])
-    losses = {'style': [disc.make_discriminator() for _ in sc_model.feat_model.output['style']]}
-    metrics = {'style': [disc.SkewLoss() for _ in sc_model.feat_model.output['style']],
-               'content': [[disc.SkewLoss() for _ in sc_model.feat_model.output['content']]]}
+
+    losses = {'style': [dist_losses.loss_dict[FLAGS.disc] for _ in sc_model.feat_model.output['style']]}
+    metrics = {'style': [[dist_metrics.MeanLoss(), dist_metrics.VarLoss(), dist_metrics.SkewLoss()] for _ in
+                         sc_model.feat_model.output['style']],
+               'content': [[] for _ in sc_model.feat_model.output['content']]}
     if FLAGS.content_image is not None:
         losses['content'] = [tf.keras.losses.MeanSquaredError() for _ in sc_model.feat_model.output['content']]
 
-    sc_model.compile(tfa.optimizers.LAMB(FLAGS.lr, FLAGS.beta1, FLAGS.beta2),
-                     loss=losses, metrics=metrics)
+    sc_model.compile(tfa.optimizers.LAMB(FLAGS.lr, FLAGS.beta1, FLAGS.beta2), loss=losses, metrics=metrics)
     tf.keras.utils.plot_model(sc_model.feat_model, './out/feat_model.jpg')
 
     # Configure batch norm layers to normalize features of the style and content images
-    feats_dict = sc_model((style_image, content_image), training=True)
+    sc_model.feat_model((style_image, content_image), training=True)
     sc_model.feat_model.trainable = False
+
+    # Log distribution statistics of the style image
+    feats_dict = sc_model.feat_model((style_image, content_image), training=False)
+    moments = []
+    for style_feats in feats_dict['style']:
+        m1 = tf.reduce_mean(style_feats, axis=[1, 2]).numpy()
+        m2 = tf.math.reduce_variance(style_feats, axis=[1, 2]).numpy()
+        m3 = utils.compute_skewness(style_feats, axes=[1, 2]).numpy()
+        moments.append([m1, m2, m3])
+    logging.info('=' * 100)
+    logging.info('style moments')
+    logging.info(f"\tmean: {[m[0] for m in moments]}")
+    logging.info(f"\tvar: {[m[1] for m in moments]}")
+    logging.info(f"\tskew: {[m[2] for m in moments]}")
+    logging.info('=' * 100)
 
     # Run the style model
     start_time = datetime.datetime.now()
