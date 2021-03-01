@@ -96,6 +96,7 @@ def main(argv):
     logs_df.filter(like='mean').plot(logy=True, ax=axes[1])
     logs_df.filter(like='var').plot(logy=True, ax=axes[2])
     logs_df.filter(like='skew').plot(logy=True, ax=axes[3])
+    f.tight_layout()
     f.savefig('out/metrics.jpg')
 
 
