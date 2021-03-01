@@ -22,6 +22,8 @@ flags.DEFINE_float('epsilon', 1e-5, 'epsilon')
 
 flags.DEFINE_integer('train_steps', 100, 'train steps')
 
+flags.DEFINE_bool('load', False, 'load')
+
 
 def main(argv):
     del argv  # Unused.
@@ -70,7 +72,7 @@ def main(argv):
     # Run the style model
     start_time = datetime.datetime.now()
     sc_model.fit((style_image, content_image), feats_dict, epochs=FLAGS.train_steps, batch_size=1,
-                 verbose=FLAGS.verbose, callbacks=tf.keras.callbacks.CSVLogger('./out/logs.csv'))
+                 verbose=FLAGS.verbose, callbacks=tf.keras.callbacks.CSVLogger('./out/logs.csv', append=FLAGS.load))
     end_time = datetime.datetime.now()
     duration = end_time - start_time
     logging.info(f'training took {duration}')
