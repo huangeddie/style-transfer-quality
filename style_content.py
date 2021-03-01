@@ -14,7 +14,7 @@ def load_feat_model(input_shape):
         style_input = tf.keras.Input(input_shape)
         content_input = tf.keras.Input(input_shape)
 
-        preprocess_fn = tf.keras.applications.vgg19.preprocess_input
+        preprocess_fn = tf.keras.layers.Lambda(tf.keras.applications.vgg19.preprocess_input)
         vgg19 = tf.keras.applications.VGG19(include_top=False)
         vgg19.trainable = False
 
@@ -37,7 +37,7 @@ def load_feat_model(input_shape):
         style_input = tf.keras.Input(input_shape)
         content_input = tf.keras.Input(input_shape)
 
-        preprocess_fn = tf.keras.applications.nasnet.preprocess_input
+        preprocess_fn = tf.keras.layers.Lambda(tf.keras.applications.nasnet.preprocess_input)
         nasnet = tf.keras.applications.NASNetLarge(include_top=False)
         nasnet.trainable = False
 

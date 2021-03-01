@@ -4,7 +4,6 @@ import os
 import matplotlib.pyplot as plt
 import pandas as pd
 import tensorflow as tf
-import tensorflow_addons as tfa
 from absl import app
 from absl import flags
 from absl import logging
@@ -45,7 +44,8 @@ def main(argv):
         if FLAGS.content_image is not None:
             losses['content'] = [tf.keras.losses.MeanSquaredError() for _ in sc_model.feat_model.output['content']]
 
-        sc_model.compile(tf.keras.optimizers.Adam(FLAGS.lr, FLAGS.beta1, FLAGS.beta2, FLAGS.epsilon), loss=losses, metrics=metrics)
+        sc_model.compile(tf.keras.optimizers.Adam(FLAGS.lr, FLAGS.beta1, FLAGS.beta2, FLAGS.epsilon), loss=losses,
+                         metrics=metrics)
     tf.keras.utils.plot_model(sc_model.feat_model, './out/feat_model.jpg')
 
     # Configure batch norm layers to normalize features of the style and content images
