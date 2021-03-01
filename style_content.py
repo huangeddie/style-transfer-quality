@@ -1,6 +1,5 @@
 import tensorflow as tf
 from absl import flags
-from absl import logging
 
 FLAGS = flags.FLAGS
 
@@ -9,12 +8,21 @@ flags.DEFINE_enum('feat_model', 'vgg19', ['vgg19', 'nasnetlarge', 'fast'],
 flags.DEFINE_enum('disc', 'm2', ['m2', 'gram', 'm3'], 'type of discrimination to use')
 
 
+class Preprocess(tf.keras.layers.Layer):
+    def __init__(self, preprocess_fn, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.preprocess = preprocess_fn
+
+    def call(self, inputs, **kwargs):
+        return self.preprocess(inputs)
+
+
 def load_feat_model(input_shape):
     if FLAGS.feat_model == 'vgg19':
         style_input = tf.keras.Input(input_shape)
         content_input = tf.keras.Input(input_shape)
 
-        preprocess_fn = tf.keras.layers.Lambda(tf.keras.applications.vgg19.preprocess_input)
+        preprocess_fn = Preprocess(tf.keras.applications.vgg19.preprocess_input)
         vgg19 = tf.keras.applications.VGG19(include_top=False)
         vgg19.trainable = False
 
@@ -37,7 +45,7 @@ def load_feat_model(input_shape):
         style_input = tf.keras.Input(input_shape)
         content_input = tf.keras.Input(input_shape)
 
-        preprocess_fn = tf.keras.layers.Lambda(tf.keras.applications.nasnet.preprocess_input)
+        preprocess_fn = Preprocess(tf.keras.applications.nasnet.preprocess_input)
         nasnet = tf.keras.applications.NASNetLarge(include_top=False)
         nasnet.trainable = False
 
