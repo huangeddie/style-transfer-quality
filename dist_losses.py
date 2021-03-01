@@ -1,6 +1,16 @@
 import tensorflow as tf
 
 
+class FirstMomentLoss(tf.keras.losses.Loss):
+    def call(self, y_true, y_pred):
+        feats1, feats2 = y_true, y_pred
+
+        mu1 = tf.reduce_mean(feats1, axis=[1, 2], keepdims=True)
+        mu2 = tf.reduce_mean(feats2, axis=[1, 2], keepdims=True)
+
+        return (mu1 - mu2) ** 2
+
+
 class SecondMomentLoss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
         feats1, feats2 = y_true, y_pred
@@ -8,9 +18,7 @@ class SecondMomentLoss(tf.keras.losses.Loss):
         mu1, var1 = tf.nn.moments(feats1, axes=[1, 2], keepdims=True)
         mu2, var2 = tf.nn.moments(feats2, axes=[1, 2], keepdims=True)
 
-        loss = (mu1 - mu2) ** 2 + (var1 - var2) ** 2
-
-        return loss
+        return (mu1 - mu2) ** 2 + (var1 - var2) ** 2
 
 
 class ThirdMomentLoss(tf.keras.losses.Loss):
@@ -26,9 +34,7 @@ class ThirdMomentLoss(tf.keras.losses.Loss):
         skew1 = tf.reduce_mean(z1 ** 3, axis=[1, 2], keepdims=True)
         skew2 = tf.reduce_mean(z2 ** 3, axis=[1, 2], keepdims=True)
 
-        loss = (mu1 - mu2) ** 2 + (var1 - var2) ** 2 + (skew1 - skew2) ** 2
-
-        return loss
+        return (mu1 - mu2) ** 2 + (var1 - var2) ** 2 + (skew1 - skew2) ** 2
 
 
 class GramianLoss(tf.keras.losses.Loss):
@@ -41,4 +47,4 @@ class GramianLoss(tf.keras.losses.Loss):
         return (gram_true - gram_pred) ** 2
 
 
-loss_dict = {'m2': SecondMomentLoss(), 'gram': GramianLoss(), 'm3': ThirdMomentLoss()}
+loss_dict = {'m1': FirstMomentLoss(), 'm2': SecondMomentLoss(), 'gram': GramianLoss(), 'm3': ThirdMomentLoss()}

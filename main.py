@@ -14,7 +14,7 @@ from utils import plot_metrics, log_metrics, log_feat_distribution
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_multi_enum('losses', ['m2'], ['m2', 'gram', 'm3'], 'type of loss to use')
+flags.DEFINE_multi_enum('losses', ['m2'], ['m1', 'm2', 'gram', 'm3'], 'type of loss to use')
 
 flags.DEFINE_integer('train_steps', 100, 'train steps')
 flags.DEFINE_integer('verbose', 0, 'verbosity')
