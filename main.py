@@ -58,7 +58,7 @@ def run_style_transfer(strategy, style_image, content_image, loss_key):
 
     # Save the images to disk
     gen_image = sc_model.get_gen_image()
-    for filename, image in [('style.jpg', style_image), ('content.jpg', content_image), ('gen.jpg', gen_image)]:
+    for filename, image in [('style.jpg', style_image), ('content.jpg', content_image), (f'{loss_key}.jpg', gen_image)]:
         tf.keras.preprocessing.image.save_img(os.path.join('./out', filename), tf.squeeze(image, 0))
     logging.info(f'images saved to ./out')
 
