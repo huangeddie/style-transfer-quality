@@ -5,7 +5,7 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_enum('feat_model', 'vgg19', ['vgg19', 'nasnetlarge', 'fast'],
                   'whether or not to cache the features when performing style transfer')
-flags.DEFINE_enum('disc', 'm2', ['m2', 'gram', 'm3'], 'type of discrimination to use')
+flags.DEFINE_enum('loss', 'm2', ['m2', 'gram', 'm3'], 'type of loss to use')
 
 
 class Preprocess(tf.keras.layers.Layer):

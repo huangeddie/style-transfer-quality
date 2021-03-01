@@ -39,7 +39,7 @@ def main(argv):
     with strategy.scope():
         sc_model = sc.SCModel(style_image.shape[1:])
 
-        losses = {'style': [dist_losses.loss_dict[FLAGS.disc] for _ in sc_model.feat_model.output['style']]}
+        losses = {'style': [dist_losses.loss_dict[FLAGS.loss] for _ in sc_model.feat_model.output['style']]}
         metrics = {'style': [[dist_metrics.MeanLoss(), dist_metrics.VarLoss(), dist_metrics.SkewLoss()] for _ in
                              sc_model.feat_model.output['style']],
                    'content': [[] for _ in sc_model.feat_model.output['content']]}
@@ -70,6 +70,7 @@ def main(argv):
     logging.info('=' * 100)
 
     # Run the style model
+    logging.info(f'loss function: {FLAGS.loss}')
     start_time = datetime.datetime.now()
     sc_model.fit((style_image, content_image), feats_dict, epochs=FLAGS.train_steps, batch_size=1,
                  verbose=FLAGS.verbose, callbacks=tf.keras.callbacks.CSVLogger('./out/logs.csv', append=FLAGS.load))
@@ -93,7 +94,7 @@ def main(argv):
 
     # Print contributing loss of each metric
     last_epoch_logs = logs_df.iloc[-1]
-    logging.info(f"loss: {last_epoch_logs['loss']:.4}")
+    logging.info(f"total loss: {last_epoch_logs['loss']:.4}")
     for metric in ['mean', 'var', 'skew']:
         mean_val = last_epoch_logs.filter(like=metric).sum()
         logging.info(f'total {metric:.4} loss: {mean_val:.4}')
