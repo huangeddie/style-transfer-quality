@@ -93,7 +93,7 @@ class SCModel(tf.keras.Model):
                                          initializer=tf.keras.initializers.RandomUniform(minval=0, maxval=255))
         if FLAGS.load:
             loaded_gen_image = tf.expand_dims(tf.image.decode_image(tf.io.read_file('./out/gen.jpg')), 0)
-            self.gen_image.assign(loaded_gen_image)
+            self.gen_image.assign(tf.cast(loaded_gen_image, tf.float32))
 
     def call(self, inputs, training=None, mask=None):
         return self.feat_model((self.gen_image, self.gen_image), training=training)
