@@ -89,7 +89,6 @@ class SCModel(tf.keras.Model):
 
     def train_step(self, data):
         images, feats = data
-        logging.info(f'images: {tf.shape(images[0]), tf.shape(images[0])}')
 
         with tf.GradientTape() as tape:
             # Compute generated features
