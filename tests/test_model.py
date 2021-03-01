@@ -1,6 +1,5 @@
 import tensorflow as tf
 from absl import flags
-from absl import logging
 from absl.testing import absltest
 
 import style_content as sc

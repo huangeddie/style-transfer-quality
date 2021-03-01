@@ -1,5 +1,6 @@
 import tensorflow as tf
-from absl import flags
+from absl import flags, logging
+from matplotlib import pyplot as plt
 from tensorflow.keras import mixed_precision
 
 FLAGS = flags.FLAGS
@@ -58,3 +59,38 @@ def compute_skewness(x, axes):
 
     skew = tf.reduce_mean(z ** 3, axis=axes, keepdims=True)
     return skew
+
+
+def plot_metrics(logs_df):
+    logs_df.set_index('epoch')
+    f, axes = plt.subplots(1, 4)
+    f.set_size_inches(16, 3)
+    logs_df.plot(y='loss', logy=True, ax=axes[0])
+    logs_df.filter(like='mean').plot(logy=True, ax=axes[1])
+    logs_df.filter(like='var').plot(logy=True, ax=axes[2])
+    logs_df.filter(like='skew').plot(logy=True, ax=axes[3])
+    f.tight_layout()
+    f.savefig('out/metrics.jpg')
+
+
+def log_metrics(logs_df):
+    last_epoch_logs = logs_df.iloc[-1]
+    logging.info(f"total loss: {last_epoch_logs['loss']:.4}")
+    for metric in ['mean', 'var', 'skew']:
+        mean_val = last_epoch_logs.filter(like=metric).sum()
+        logging.info(f'total {metric:.4} loss: {mean_val:.4}')
+
+
+def log_feat_distribution(feats_dict):
+    moments = []
+    for style_feats in feats_dict['style']:
+        m1 = tf.reduce_mean(style_feats, axis=[1, 2]).numpy()
+        m2 = tf.math.reduce_variance(style_feats, axis=[1, 2]).numpy()
+        m3 = compute_skewness(style_feats, axes=[1, 2]).numpy()
+        moments.append([m1, m2, m3])
+    logging.info('=' * 100)
+    logging.info('average style moments')
+    logging.info(f"\tmean: {[m[0].mean() for m in moments]}")
+    logging.info(f"\tvar: {[m[1].mean() for m in moments]}")
+    logging.info(f"\tskew: {[m[2].mean() for m in moments]}")
+    logging.info('=' * 100)

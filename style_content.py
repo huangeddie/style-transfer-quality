@@ -1,11 +1,13 @@
 import tensorflow as tf
 from absl import flags
 
+import dist_losses
+import dist_metrics
+
 FLAGS = flags.FLAGS
 
 flags.DEFINE_enum('feat_model', 'vgg19', ['vgg19', 'nasnetlarge', 'fast'],
                   'whether or not to cache the features when performing style transfer')
-flags.DEFINE_enum('loss', 'm2', ['m2', 'gram', 'm3'], 'type of loss to use')
 
 
 class Preprocess(tf.keras.layers.Layer):
@@ -123,3 +125,19 @@ class SCModel(tf.keras.Model):
 
     def get_gen_image(self):
         return tf.constant(tf.cast(self.gen_image, tf.uint8))
+
+
+def make_sc_model(strategy, image_shape, loss_key):
+    with strategy.scope():
+        sc_model = SCModel(image_shape)
+
+        losses = {'style': [dist_losses.loss_dict[loss_key] for _ in sc_model.feat_model.output['style']]}
+        metrics = {'style': [[dist_metrics.MeanLoss(), dist_metrics.VarLoss(), dist_metrics.SkewLoss()] for _ in
+                             sc_model.feat_model.output['style']],
+                   'content': [[] for _ in sc_model.feat_model.output['content']]}
+        if FLAGS.content_image is not None:
+            losses['content'] = [tf.keras.losses.MeanSquaredError() for _ in sc_model.feat_model.output['content']]
+
+        sc_model.compile(tf.keras.optimizers.Adam(FLAGS.lr, FLAGS.beta1, FLAGS.beta2, FLAGS.epsilon), loss=losses,
+                         metrics=metrics)
+    return sc_model
