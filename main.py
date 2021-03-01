@@ -45,7 +45,7 @@ def main(argv):
     if FLAGS.content_image is not None:
         losses['content'] = [tf.keras.losses.MeanSquaredError() for _ in sc_model.feat_model.output['content']]
 
-    sc_model.compile(tfa.optimizers.LAMB(FLAGS.lr, FLAGS.beta1, FLAGS.beta2, FLAGS.epsilon), loss=losses, metrics=metrics)
+    sc_model.compile(tf.keras.optimizers.Adam(FLAGS.lr, FLAGS.beta1, FLAGS.beta2, FLAGS.epsilon), loss=losses, metrics=metrics)
     tf.keras.utils.plot_model(sc_model.feat_model, './out/feat_model.jpg')
 
     # Configure batch norm layers to normalize features of the style and content images
@@ -89,9 +89,13 @@ def main(argv):
 
     # Plot loss
     logs_df = pd.read_csv('out/logs.csv')
-    f, axes = plt.subplots(1, 2)
-    logs_df.plot(x='epoch', y='loss', logy=True, ax=axes[0])
-    logs_df.plot(x='epoch', logy=True, ax=axes[1])
+    logs_df.set_index('epoch')
+    f, axes = plt.subplots(1, 4)
+    f.set_size_inches(16, 3)
+    logs_df.plot(y='loss', logy=True, ax=axes[0])
+    logs_df.filter(like='mean').plot(logy=True, ax=axes[1])
+    logs_df.filter(like='var').plot(logy=True, ax=axes[2])
+    logs_df.filter(like='skew').plot(logy=True, ax=axes[3])
     f.savefig('out/metrics.jpg')
 
 
