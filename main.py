@@ -72,7 +72,7 @@ def main(argv):
     # Plot loss
     logs_df = pd.read_csv('out/logs.csv')
     f, axes = plt.subplots(1, 2)
-    logs_df.plot(x='epoch', y='loss', ax=axes[0])
+    logs_df.plot(x='epoch', y='loss', logy=True, ax=axes[0])
     logs_df.plot(x='epoch', logy=True, ax=axes[1])
     f.savefig('out/metrics.jpg')
 
