@@ -9,6 +9,7 @@ from absl import logging
 
 import style_content as sc
 import utils
+from style_content import configure_sc_model
 from utils import plot_metrics, log_metrics, log_feat_distribution
 
 FLAGS = flags.FLAGS
@@ -27,14 +28,13 @@ def run_style_transfer(strategy, style_image, content_image, loss_key):
     # Create the style-content model
     logging.info('making style-content model')
     image_shape = style_image.shape[1:]
-    sc_model = sc.make_sc_model(strategy, image_shape, loss_key)
+    sc_model = sc.make_and_compile_sc_model(strategy, image_shape, loss_key)
+
+    # Configure batch norm layers to normalize features of the style and content images
+    configure_sc_model(sc_model, style_image, content_image)
 
     # Plot the feature model structure
     tf.keras.utils.plot_model(sc_model.feat_model, './out/feat_model.jpg')
-
-    # Configure batch norm layers to normalize features of the style and content images
-    sc_model.feat_model((style_image, content_image), training=True)
-    sc_model.feat_model.trainable = False
 
     # Get the style and content features
     feats_dict = sc_model.feat_model((style_image, content_image), training=False)

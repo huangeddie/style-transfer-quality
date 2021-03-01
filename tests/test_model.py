@@ -26,6 +26,26 @@ class TestModel(absltest.TestCase):
         output = sc_model((x, y))
         print(output)
 
+    def test_pca_einsum(self):
+        for _ in range(100):
+            a = tf.random.normal([8, 32, 32, 64])
+            b = tf.random.normal([64, 16])
+            einsum_result = tf.einsum('bhwc,cd->bhwd', a, b)
+
+            flat_a = tf.reshape(a, [-1, 64])
+            flat_result = tf.matmul(flat_a, b)
+            true_result = tf.reshape(flat_result, [8, 32, 32, 16])
+
+            tf.debugging.assert_equal(true_result, einsum_result)
+
+    def test_pca_constant(self):
+        foo = tf.keras.Sequential([sc.PCA(2)])
+        out = foo(tf.random.normal([32, 16, 16, 4]))
+        tf.debugging.assert_shapes([(out, [32, 16, 16, 2])])
+        self.assertEqual(len(foo.trainable_weights), 0)
+        foo.trainable = True
+        self.assertEqual(len(foo.trainable_weights), 0)
+
 
 if __name__ == '__main__':
     absltest.main()

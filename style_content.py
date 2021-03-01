@@ -1,5 +1,7 @@
 import tensorflow as tf
 from absl import flags
+from absl import logging
+from sklearn import decomposition
 
 import dist_losses
 import dist_metrics
@@ -8,6 +10,7 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_enum('feat_model', 'vgg19', ['vgg19', 'nasnetlarge', 'fast'],
                   'whether or not to cache the features when performing style transfer')
+flags.DEFINE_integer('pca', None, 'maximum dimension of features enforced with PCA')
 
 
 class Preprocess(tf.keras.layers.Layer):
@@ -19,11 +22,28 @@ class Preprocess(tf.keras.layers.Layer):
         return self.preprocess(inputs)
 
 
-def load_feat_model(input_shape):
-    if FLAGS.feat_model == 'vgg19':
-        style_input = tf.keras.Input(input_shape)
-        content_input = tf.keras.Input(input_shape)
+class PCA(tf.keras.layers.Layer):
+    def __init__(self, out_dim, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.out_dim = out_dim
 
+    def build(self, input_shape):
+        self.projection = self.add_weight('projection', [input_shape[-1], self.out_dim], trainable=False)
+
+    def configure(self, feats):
+        pca = decomposition.PCA(n_components=self.out_dim)
+        channels = tf.shape(feats)[-1]
+        pca.fit(tf.reshape(feats, [-1, channels]))
+        self.projection.assign(tf.constant(pca.components_.T, dtype=self.projection.dtype))
+
+    def call(self, inputs, **kwargs):
+        return tf.einsum('bhwc,cd->bhwd', inputs, self.projection)
+
+
+def make_feat_model(input_shape):
+    style_input = tf.keras.Input(input_shape, name='style')
+    content_input = tf.keras.Input(input_shape, name='content')
+    if FLAGS.feat_model == 'vgg19':
         preprocess_fn = Preprocess(tf.keras.applications.vgg19.preprocess_input)
         vgg19 = tf.keras.applications.VGG19(include_top=False)
         vgg19.trainable = False
@@ -38,15 +58,11 @@ def load_feat_model(input_shape):
 
         x = preprocess_fn(style_input)
         style_output = vgg_style(x)
-        style_model = tf.keras.Model(style_input, style_output)
 
         x = preprocess_fn(content_input)
         content_output = vgg_content(x)
-        content_model = tf.keras.Model(content_input, content_output)
-    elif FLAGS.feat_model == 'nasnetlarge':
-        style_input = tf.keras.Input(input_shape)
-        content_input = tf.keras.Input(input_shape)
 
+    elif FLAGS.feat_model == 'nasnetlarge':
         preprocess_fn = Preprocess(tf.keras.applications.nasnet.preprocess_input)
         nasnet = tf.keras.applications.NASNetLarge(include_top=False)
         nasnet.trainable = False
@@ -61,21 +77,21 @@ def load_feat_model(input_shape):
 
         x = preprocess_fn(style_input)
         style_output = nasnet_style(x)
-        style_model = tf.keras.Model(style_input, style_output)
 
         x = preprocess_fn(content_input)
         content_output = nasnet_content(x)
-        content_model = tf.keras.Model(content_input, content_output)
+
     elif FLAGS.feat_model == 'fast':
-        style_input = tf.keras.Input(input_shape)
-        content_input = tf.keras.Input(input_shape)
         avg_pool = tf.keras.layers.AveragePooling2D(pool_size=4)
 
-        style_model = tf.keras.Model(style_input, [avg_pool(style_input)])
-        content_model = tf.keras.Model(content_input, [avg_pool(content_input)])
+        style_output = avg_pool(style_input)
+        content_output = avg_pool(content_input)
+
     else:
         raise ValueError(f'unknown feature model: {FLAGS.feat_model}')
 
+    style_model = tf.keras.Model(style_input, style_output)
+    content_model = tf.keras.Model(content_input, content_output)
     new_style_outputs = [tf.keras.layers.BatchNormalization(scale=False, center=False, momentum=0)(output) for
                          output in style_model.outputs]
     new_content_outputs = [tf.keras.layers.BatchNormalization(scale=False, center=False, momentum=0)(output) for
@@ -88,7 +104,7 @@ def load_feat_model(input_shape):
 class SCModel(tf.keras.Model):
     def __init__(self, input_shape, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.feat_model = load_feat_model(input_shape)
+        self.feat_model = make_feat_model(input_shape)
 
     def build(self, input_shape):
         self.gen_image = self.add_weight('gen_image', input_shape[0],
@@ -124,7 +140,7 @@ class SCModel(tf.keras.Model):
         return tf.constant(tf.cast(self.gen_image, tf.uint8))
 
 
-def make_sc_model(strategy, image_shape, loss_key):
+def make_and_compile_sc_model(strategy, image_shape, loss_key):
     with strategy.scope():
         sc_model = SCModel(image_shape)
 
@@ -138,3 +154,29 @@ def make_sc_model(strategy, image_shape, loss_key):
         sc_model.compile(tf.keras.optimizers.Adam(FLAGS.lr, FLAGS.beta1, FLAGS.beta2, FLAGS.epsilon), loss=losses,
                          metrics=metrics)
     return sc_model
+
+
+def configure_sc_model(sc_model, style_image, content_image):
+    feat_model = sc_model.feat_model
+
+    feats_dict = feat_model((style_image, content_image), training=True)
+    feat_model.trainable = False
+
+    if FLAGS.pca is not None:
+        new_style_outputs = []
+        for old_output, feats, in zip(feat_model.output['style'], feats_dict['style']):
+            pca = PCA(min(FLAGS.pca, old_output.shape[-1]))
+            new_style_outputs.append(pca(old_output))
+            pca.configure(feats)
+
+        new_content_outputs = []
+        for old_output, feats, in zip(feat_model.output['content'], feats_dict['content']):
+            pca = PCA(min(FLAGS.pca, old_output.shape[-1]))
+            new_content_outputs.append(pca(old_output))
+            pca.configure(feats)
+
+        new_feat_model = tf.keras.models.Model(feat_model.input,
+                                               {'style': new_style_outputs, 'content': new_content_outputs})
+        logging.info(f'features projected to {FLAGS.pca} maximum dimensions with PCA')
+
+        sc_model.feat_model = new_feat_model
