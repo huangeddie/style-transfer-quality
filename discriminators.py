@@ -14,8 +14,8 @@ class SkewLoss(tf.keras.metrics.Metric):
         mu1, var1 = tf.nn.moments(feats1, axes=[1, 2], keepdims=True)
         mu2, var2 = tf.nn.moments(feats2, axes=[1, 2], keepdims=True)
 
-        z1 = (feats1 - mu1) * tf.math.rsqrt(var1)
-        z2 = (feats2 - mu2) * tf.math.rsqrt(var2)
+        z1 = (feats1 - mu1) * tf.math.rsqrt(var1 + 1e-3)
+        z2 = (feats2 - mu2) * tf.math.rsqrt(var2 + 1e-3)
 
         skew1 = tf.reduce_mean(z1 ** 3, axis=[1, 2], keepdims=True)
         skew2 = tf.reduce_mean(z2 ** 3, axis=[1, 2], keepdims=True)
@@ -55,8 +55,8 @@ class ThirdMomentLoss(tf.keras.losses.Loss):
         mu1, var1 = tf.nn.moments(feats1, axes=[1, 2], keepdims=True)
         mu2, var2 = tf.nn.moments(feats2, axes=[1, 2], keepdims=True)
 
-        z1 = (feats1 - mu1) * tf.math.rsqrt(var1)
-        z2 = (feats2 - mu2) * tf.math.rsqrt(var2)
+        z1 = (feats1 - mu1) * tf.math.rsqrt(var1 + 1e-3)
+        z2 = (feats2 - mu2) * tf.math.rsqrt(var2 + 1e-3)
 
         skew1 = tf.reduce_mean(z1 ** 3, axis=[1, 2], keepdims=True)
         skew2 = tf.reduce_mean(z2 ** 3, axis=[1, 2], keepdims=True)
@@ -68,13 +68,10 @@ class ThirdMomentLoss(tf.keras.losses.Loss):
 
 class GramianLoss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
-        tf.debugging.assert_rank(y_true, 3)
-        tf.debugging.assert_rank(y_pred, 3)
-
         num_locs = tf.cast(tf.shape(y_true)[1], y_true.dtype)
 
-        gram_true = tf.linalg.einsum('bnc,bnd->bcd', y_true, y_true) / num_locs
-        gram_pred = tf.linalg.einsum('bnc,bnd->bcd', y_pred, y_pred) / num_locs
+        gram_true = tf.linalg.einsum('bijc,bijd->bcd', y_true, y_true) / num_locs
+        gram_pred = tf.linalg.einsum('bijc,bijd->bcd', y_pred, y_pred) / num_locs
 
         return (gram_true - gram_pred) ** 2
 
