@@ -61,10 +61,10 @@ def main(argv):
         m3 = utils.compute_skewness(style_feats, axes=[1, 2]).numpy()
         moments.append([m1, m2, m3])
     logging.info('=' * 100)
-    logging.info('style moments')
-    logging.info(f"\tmean: {[m[0] for m in moments]}")
-    logging.info(f"\tvar: {[m[1] for m in moments]}")
-    logging.info(f"\tskew: {[m[2] for m in moments]}")
+    logging.info('average style moments')
+    logging.info(f"\tmean: {[m[0].mean() for m in moments]}")
+    logging.info(f"\tvar: {[m[1].mean() for m in moments]}")
+    logging.info(f"\tskew: {[m[2].mean() for m in moments]}")
     logging.info('=' * 100)
 
     # Run the style model
