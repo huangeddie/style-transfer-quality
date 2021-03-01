@@ -16,12 +16,8 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_multi_enum('losses', ['m2'], ['m2', 'gram', 'm3'], 'type of loss to use')
 
-flags.DEFINE_float('lr', 1e-3, 'learning rate')
-flags.DEFINE_float('beta1', 0.9, 'beta1')
-flags.DEFINE_float('beta2', 0.99, 'beta2')
-flags.DEFINE_float('epsilon', 1e-5, 'epsilon')
-
 flags.DEFINE_integer('train_steps', 100, 'train steps')
+flags.DEFINE_integer('verbose', 0, 'verbosity')
 
 
 def run_style_transfer(strategy, style_image, content_image, loss_key):

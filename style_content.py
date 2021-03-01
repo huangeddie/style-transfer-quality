@@ -12,6 +12,11 @@ flags.DEFINE_enum('feat_model', 'vgg19', ['vgg19', 'nasnetlarge', 'fast'],
                   'whether or not to cache the features when performing style transfer')
 flags.DEFINE_integer('pca', None, 'maximum dimension of features enforced with PCA')
 
+flags.DEFINE_float('lr', 1e-3, 'learning rate')
+flags.DEFINE_float('beta1', 0.9, 'beta1')
+flags.DEFINE_float('beta2', 0.99, 'beta2')
+flags.DEFINE_float('epsilon', 1e-7, 'epsilon')
+
 
 class Preprocess(tf.keras.layers.Layer):
     def __init__(self, preprocess_fn, *args, **kwargs):
@@ -38,6 +43,45 @@ class PCA(tf.keras.layers.Layer):
 
     def call(self, inputs, **kwargs):
         return tf.einsum('bhwc,cd->bhwd', inputs, self.projection)
+
+
+class SCModel(tf.keras.Model):
+    def __init__(self, input_shape, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.feat_model = make_feat_model(input_shape)
+
+    def build(self, input_shape):
+        self.gen_image = self.add_weight('gen_image', input_shape[0],
+                                         initializer=tf.keras.initializers.RandomUniform(minval=0, maxval=255))
+
+    def call(self, inputs, training=None, mask=None):
+        return self.feat_model((self.gen_image, self.gen_image), training=training)
+
+    def train_step(self, data):
+        images, feats = data
+
+        with tf.GradientTape() as tape:
+            # Compute generated features
+            gen_feats = self(images, training=False)
+
+            # Compute the loss value
+            # (the loss function is configured in `compile()`)
+            loss = self.compiled_loss(feats, gen_feats, regularization_losses=self.losses)
+
+        # Optimize generated image
+        grad = tape.gradient(loss, [self.gen_image])
+        self.optimizer.apply_gradients(zip(grad, [self.gen_image]))
+        # Clip to RGB range
+        self.gen_image.assign(tf.clip_by_value(self.gen_image, 0, 255))
+
+        # Update metrics
+        self.compiled_metrics.update_state(feats, gen_feats)
+
+        # Return a dict mapping metric names to current value
+        return {m.name: m.result() for m in self.metrics}
+
+    def get_gen_image(self):
+        return tf.constant(tf.cast(self.gen_image, tf.uint8))
 
 
 def make_feat_model(input_shape):
@@ -99,45 +143,6 @@ def make_feat_model(input_shape):
 
     return tf.keras.Model([style_model.input, content_model.input],
                           {'style': new_style_outputs, 'content': new_content_outputs})
-
-
-class SCModel(tf.keras.Model):
-    def __init__(self, input_shape, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.feat_model = make_feat_model(input_shape)
-
-    def build(self, input_shape):
-        self.gen_image = self.add_weight('gen_image', input_shape[0],
-                                         initializer=tf.keras.initializers.RandomUniform(minval=0, maxval=255))
-
-    def call(self, inputs, training=None, mask=None):
-        return self.feat_model((self.gen_image, self.gen_image), training=training)
-
-    def train_step(self, data):
-        images, feats = data
-
-        with tf.GradientTape() as tape:
-            # Compute generated features
-            gen_feats = self(images, training=False)
-
-            # Compute the loss value
-            # (the loss function is configured in `compile()`)
-            loss = self.compiled_loss(feats, gen_feats, regularization_losses=self.losses)
-
-        # Optimize generated image
-        grad = tape.gradient(loss, [self.gen_image])
-        self.optimizer.apply_gradients(zip(grad, [self.gen_image]))
-        # Clip to RGB range
-        self.gen_image.assign(tf.clip_by_value(self.gen_image, 0, 255))
-
-        # Update metrics
-        self.compiled_metrics.update_state(feats, gen_feats)
-
-        # Return a dict mapping metric names to current value
-        return {m.name: m.result() for m in self.metrics}
-
-    def get_gen_image(self):
-        return tf.constant(tf.cast(self.gen_image, tf.uint8))
 
 
 def make_and_compile_sc_model(strategy, image_shape, loss_key):
