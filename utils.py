@@ -99,12 +99,14 @@ def plot_layer_grams(raw_feats_dict, feats_dict, filepath):
     raw_grams = get_layer_grams(raw_feats_dict['style'])
     proj_grams = get_layer_grams(feats_dict['style'])
     f, ax = plt.subplots(2, len(raw_grams))
-    f.set_size_inches(5, len(raw_grams) * 5)
+    f.set_size_inches(len(raw_grams) * 5, 5)
     for i, (raw_gram, proj_gram) in enumerate(zip(raw_grams, proj_grams)):
         ax[0, i].set_title(f'raw gram {i}')
-        ax[0, i].imshow(tf.squeeze(raw_gram, 0))
+        im = ax[0, i].imshow(tf.squeeze(raw_gram, 0))
+        plt.colorbar(im, ax=ax[0, i])
 
         ax[1, i].set_title(f'proj gram {i}')
-        ax[1, i].imshow(tf.squeeze(proj_gram, 0))
+        im = ax[1, i].imshow(tf.squeeze(proj_gram, 0))
+        plt.colorbar(im, ax=ax[1, i])
     f.tight_layout()
     f.savefig(filepath)
