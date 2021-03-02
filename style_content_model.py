@@ -34,9 +34,11 @@ class PCA(tf.keras.layers.Layer):
 
     def configure(self, feats):
         pca = decomposition.PCA(n_components=self.out_dim, whiten=True)
-        channels = tf.shape(feats)[-1]
+        feats_shape = tf.shape(feats)
+        n_samples, channels = tf.reduce_prod(feats_shape[:-1]), feats_shape[-1]
         pca.fit(tf.reshape(feats, [-1, channels]))
-        self.projection.assign(tf.constant(pca.components_.T, dtype=self.projection.dtype))
+        projection = pca.components_.T * tf.math.rsqrt(float(n_samples))
+        self.projection.assign(tf.constant(projection, dtype=self.projection.dtype))
 
     def call(self, inputs, **kwargs):
         return tf.einsum('bhwc,cd->bhwd', inputs, self.projection)
