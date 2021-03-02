@@ -1,4 +1,5 @@
 import os
+import shutil
 
 import pandas as pd
 import tensorflow as tf
@@ -52,7 +53,8 @@ def main(argv):
     for loss_key in FLAGS.losses:
         # Make base dir
         loss_dir = f'out/{loss_key}'
-        os.makedirs(loss_dir, exist_ok=True)
+        shutil.rmtree(loss_dir, ignore_errors=True)
+        os.mkdir(loss_dir)
 
         # Reset gen image and recompile
         sc_model.reinit_gen_image()
@@ -81,7 +83,8 @@ def main(argv):
         sc_model = compile_sc_model(strategy, sc_model, loss_key)
         raw_metrics = sc_model.evaluate((style_image, content_image), raw_feats_dict, batch_size=1, return_dict=True)
         raw_metrics = pd.Series(raw_metrics)
-        raw_metrics.to_csv(f'{loss_dir}/raw_metrics.csv')
+        for metric in ['mean', 'var', 'gram', 'skew']:
+            raw_metrics.filter(like=metric).to_csv(f'{loss_dir}/raw_metrics.csv', mode='a')
         sc_model.feat_model = orig_feat_model
 
         plot_metrics(logs_df, path=f'{loss_dir}/plots.jpg')
