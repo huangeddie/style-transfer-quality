@@ -55,6 +55,36 @@ class VarLoss(tf.keras.metrics.Metric):
         self.var_loss.assign(0.0)
 
 
+class GramLoss(tf.keras.metrics.Metric):
+    def __init__(self, name="gram_loss", **kwargs):
+        super().__init__(name=name, **kwargs)
+        self.gram_loss = self.add_weight(name="gram_loss", initializer="zeros")
+
+    def update_state(self, y_true, y_pred, sample_weight=None):
+        feats1, feats2 = y_true, y_pred
+        tf.debugging.assert_rank(y_true, 4)
+        imshape = tf.shape(y_true)
+        num_locs = tf.cast(imshape[1] * imshape[2], y_true.dtype)
+
+        gram1 = tf.einsum('bhwc,bhwd->bcd', feats1, feats1) / num_locs
+        gram2 = tf.einsum('bhwc,bhwd->bcd', feats2, feats2) / num_locs
+
+        gram_loss = (gram1 - gram2) ** 2
+
+        if sample_weight is not None:
+            sample_weight = tf.cast(sample_weight, "float32")
+            gram_loss = tf.multiply(gram_loss, sample_weight)
+
+        self.gram_loss.assign_add(tf.reduce_mean(gram_loss))
+
+    def result(self):
+        return self.gram_loss
+
+    def reset_states(self):
+        # The state of the metric will be reset at the start of each epoch.
+        self.gram_loss.assign(0.0)
+
+
 class SkewLoss(tf.keras.metrics.Metric):
     def __init__(self, name="skew_loss", **kwargs):
         super().__init__(name=name, **kwargs)

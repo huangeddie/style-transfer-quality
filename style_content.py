@@ -149,15 +149,15 @@ def make_and_compile_sc_model(strategy, image_shape, loss_key):
     with strategy.scope():
         sc_model = SCModel(image_shape)
 
-        losses = {'style': [dist_losses.loss_dict[loss_key] for _ in sc_model.feat_model.output['style']]}
-        metrics = {'style': [[dist_metrics.MeanLoss(), dist_metrics.VarLoss(), dist_metrics.SkewLoss()] for _ in
-                             sc_model.feat_model.output['style']],
-                   'content': [[] for _ in sc_model.feat_model.output['content']]}
+        loss_dict = {'style': [dist_losses.loss_dict[loss_key] for _ in sc_model.feat_model.output['style']]}
+        metrics = [dist_metrics.MeanLoss(), dist_metrics.VarLoss(), dist_metrics.GramLoss(), dist_metrics.SkewLoss()]
+        metric_dict = {'style': [metrics for _ in sc_model.feat_model.output['style']],
+                       'content': [[] for _ in sc_model.feat_model.output['content']]}
         if FLAGS.content_image is not None:
-            losses['content'] = [tf.keras.losses.MeanSquaredError() for _ in sc_model.feat_model.output['content']]
+            loss_dict['content'] = [tf.keras.losses.MeanSquaredError() for _ in sc_model.feat_model.output['content']]
 
-        sc_model.compile(tf.keras.optimizers.Adam(FLAGS.lr, FLAGS.beta1, FLAGS.beta2, FLAGS.epsilon), loss=losses,
-                         metrics=metrics)
+        sc_model.compile(tf.keras.optimizers.Adam(FLAGS.lr, FLAGS.beta1, FLAGS.beta2, FLAGS.epsilon),
+                         loss=loss_dict, metrics=metric_dict)
     return sc_model
 
 

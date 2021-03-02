@@ -39,7 +39,9 @@ class ThirdMomentLoss(tf.keras.losses.Loss):
 
 class GramianLoss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
-        num_locs = tf.cast(tf.shape(y_true)[1], y_true.dtype)
+        tf.debugging.assert_rank(y_true, 4)
+        imshape = tf.shape(y_true)
+        num_locs = tf.cast(imshape[1] * imshape[2], y_true.dtype)
 
         gram_true = tf.linalg.einsum('bijc,bijd->bcd', y_true, y_true) / num_locs
         gram_pred = tf.linalg.einsum('bijc,bijd->bcd', y_pred, y_pred) / num_locs
