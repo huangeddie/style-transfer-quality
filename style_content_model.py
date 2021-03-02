@@ -8,6 +8,7 @@ FLAGS = flags.FLAGS
 flags.DEFINE_enum('feat_model', 'vgg19', ['vgg19', 'nasnetlarge', 'fast'],
                   'whether or not to cache the features when performing style transfer')
 flags.DEFINE_integer('pca', None, 'maximum dimension of features enforced with PCA')
+flags.DEFINE_bool('whiten', False, 'whiten the components of PCA')
 
 flags.DEFINE_float('lr', 1e-3, 'learning rate')
 flags.DEFINE_float('beta1', 0.9, 'beta1')
@@ -33,7 +34,7 @@ class PCA(tf.keras.layers.Layer):
         self.projection = self.add_weight('projection', [input_shape[-1], self.out_dim], trainable=False)
 
     def configure(self, feats):
-        pca = decomposition.PCA(n_components=self.out_dim, whiten=True)
+        pca = decomposition.PCA(n_components=self.out_dim, whiten=FLAGS.whiten)
         feats_shape = tf.shape(feats)
         n_samples, channels = tf.reduce_prod(feats_shape[:-1]), feats_shape[-1]
         pca.fit(tf.reshape(feats, [-1, channels]))
