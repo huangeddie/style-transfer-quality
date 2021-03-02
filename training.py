@@ -4,8 +4,7 @@ import tensorflow as tf
 from absl import flags
 from absl import logging
 
-import dist_losses
-import dist_metrics
+from distributions import losses, metrics
 
 FLAGS = flags.FLAGS
 
@@ -24,9 +23,9 @@ def train(sc_model, style_image, content_image, feats_dict, loss_key):
 
 def compile_sc_model(strategy, sc_model, loss_key):
     with strategy.scope():
-        loss_dict = {'style': [dist_losses.loss_dict[loss_key] for _ in sc_model.feat_model.output['style']]}
-        metrics = [dist_metrics.MeanLoss(), dist_metrics.VarLoss(), dist_metrics.GramLoss(), dist_metrics.SkewLoss()]
-        metric_dict = {'style': [metrics for _ in sc_model.feat_model.output['style']],
+        loss_dict = {'style': [losses.loss_dict[loss_key] for _ in sc_model.feat_model.output['style']]}
+        m = [metrics.MeanLoss(), metrics.VarLoss(), metrics.GramLoss(), metrics.SkewLoss()]
+        metric_dict = {'style': [m for _ in sc_model.feat_model.output['style']],
                        'content': [[] for _ in sc_model.feat_model.output['content']]}
         if FLAGS.content_image is not None:
             loss_dict['content'] = [tf.keras.losses.MeanSquaredError() for _ in sc_model.feat_model.output['content']]
