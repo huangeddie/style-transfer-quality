@@ -83,6 +83,7 @@ def main(argv):
     # Log distribution statistics of the style image
     log_feat_distribution(feats_dict)
 
+    # Run the transfer for each loss
     for loss_key in FLAGS.losses:
         run_style_transfer(strategy, sc_model, style_image, content_image, feats_dict, loss_key)
 
