@@ -37,8 +37,7 @@ class PCA(tf.keras.layers.Layer):
         feats_shape = tf.shape(feats)
         n_samples, channels = tf.reduce_prod(feats_shape[:-1]), feats_shape[-1]
         pca.fit(tf.reshape(feats, [-1, channels]))
-        projection = pca.components_.T * tf.math.rsqrt(float(n_samples))
-        self.projection.assign(tf.constant(projection, dtype=self.projection.dtype))
+        self.projection.assign(tf.constant(pca.components_.T, dtype=self.projection.dtype))
 
     def call(self, inputs, **kwargs):
         return tf.einsum('bhwc,cd->bhwd', inputs, self.projection)
