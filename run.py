@@ -6,7 +6,6 @@ from absl import logging
 
 import style_content_model as scm
 import utils
-from style_content_model import configure_sc_model
 from training import train, compile_sc_model
 from utils import plot_metrics, log_metrics, log_feat_distribution
 
@@ -17,6 +16,8 @@ flags.DEFINE_multi_enum('losses', ['m2'], ['m1', 'm2', 'gram', 'm3'], 'type of l
 
 def main(argv):
     del argv  # Unused.
+
+    # Setup
     strategy = utils.setup()
 
     # Load style/content image
@@ -29,9 +30,7 @@ def main(argv):
     with strategy.scope():
         feat_model = scm.make_feat_model(image_shape)
         sc_model = scm.SCModel(feat_model)
-
-    # Configure the model based on the style and content images
-    configure_sc_model(sc_model, style_image, content_image)
+        scm.configure(sc_model, style_image, content_image)
 
     # Plot the feature model structure
     tf.keras.utils.plot_model(sc_model.feat_model, './out/feat_model.jpg')
@@ -64,13 +63,8 @@ def main(argv):
 
         # Metrics
         logs_df = pd.read_csv(f'out/{loss_key}_logs.csv')
-
-        # Print contributing loss of each metric
         log_metrics(logs_df)
-
-        # Plot metrics
         plot_metrics(logs_df, filename=f'{loss_key}_plots.jpg')
-
         logging.info('metrics saved to ./out')
 
 

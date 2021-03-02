@@ -145,7 +145,7 @@ def make_feat_model(input_shape):
                           {'style': new_style_outputs, 'content': new_content_outputs})
 
 
-def configure_sc_model(sc_model, style_image, content_image):
+def configure(sc_model, style_image, content_image):
     feat_model = sc_model.feat_model
 
     # Build the gen image
