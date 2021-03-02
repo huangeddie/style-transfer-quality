@@ -12,10 +12,10 @@ flags.DEFINE_integer('train_steps', 100, 'train steps')
 flags.DEFINE_integer('verbose', 0, 'verbosity')
 
 
-def train(sc_model, style_image, content_image, feats_dict, loss_key):
+def train(sc_model, style_image, content_image, feats_dict, callbacks):
     start_time = datetime.datetime.now()
     sc_model.fit((style_image, content_image), feats_dict, epochs=FLAGS.train_steps, batch_size=1,
-                 verbose=FLAGS.verbose, callbacks=tf.keras.callbacks.CSVLogger(f'./out/{loss_key}_logs.csv'))
+                 verbose=FLAGS.verbose, callbacks=callbacks)
     end_time = datetime.datetime.now()
     duration = end_time - start_time
     logging.info(f'training took {duration}')

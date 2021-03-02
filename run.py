@@ -1,3 +1,5 @@
+import os
+
 import pandas as pd
 import tensorflow as tf
 from absl import app
@@ -44,13 +46,18 @@ def main(argv):
 
     # Run the transfer for each loss
     for loss_key in FLAGS.losses:
+        # Make base dir
+        loss_dir = f'out/{loss_key}'
+        os.makedirs(loss_dir, exist_ok=True)
+
         # Reset gen image and recompile
         sc_model.reinit_gen_image()
         sc_model = compile_sc_model(strategy, sc_model, loss_key)
 
         # Style transfer
         logging.info(f'loss function: {loss_key}')
-        train(sc_model, style_image, content_image, feats_dict, loss_key)
+        callbacks = tf.keras.callbacks.CSVLogger(f'{loss_dir}/{loss_key}_logs.csv')
+        train(sc_model, style_image, content_image, feats_dict, callbacks)
 
         # Sanity evaluation
         sc_model.evaluate((style_image, content_image), feats_dict, batch_size=1, return_dict=True)
@@ -59,22 +66,22 @@ def main(argv):
         gen_image = sc_model.get_gen_image()
         for filename, image in [('style.jpg', style_image), ('content.jpg', content_image),
                                 (f'{loss_key}_gen.jpg', gen_image)]:
-            tf.keras.preprocessing.image.save_img(f'./out/{filename}', tf.squeeze(image, 0))
-        logging.info('images saved to ./out')
+            tf.keras.preprocessing.image.save_img(f'{loss_dir}/{filename}', tf.squeeze(image, 0))
+        logging.info(f'images saved to {loss_dir}')
 
         # Metrics
-        logs_df = pd.read_csv(f'out/{loss_key}_logs.csv')
+        logs_df = pd.read_csv(f'{loss_dir}/{loss_key}_logs.csv')
 
         orig_feat_model = sc_model.feat_model
         sc_model.feat_model = raw_feat_model
         sc_model = compile_sc_model(strategy, sc_model, loss_key)
         raw_metrics = sc_model.evaluate((style_image, content_image), raw_feat_dict, batch_size=1, return_dict=True)
         raw_metrics = pd.Series(raw_metrics)
-        raw_metrics.to_csv(f'out/{loss_key}_raw_metrics.csv')
+        raw_metrics.to_csv(f'{loss_dir}/{loss_key}_raw_metrics.csv')
         sc_model.feat_model = orig_feat_model
 
-        plot_metrics(logs_df, filename=f'{loss_key}_plots.jpg')
-        logging.info('metrics saved to ./out')
+        plot_metrics(logs_df, path=f'{loss_dir}/{loss_key}_plots.jpg')
+        logging.info(f'metrics saved to {loss_dir}')
 
 
 if __name__ == '__main__':
