@@ -57,7 +57,7 @@ def main(argv):
 
         # Style transfer
         logging.info(f'loss function: {loss_key}')
-        callbacks = tf.keras.callbacks.CSVLogger(f'{loss_dir}/{loss_key}_logs.csv')
+        callbacks = tf.keras.callbacks.CSVLogger(f'{loss_dir}/logs.csv')
         train(sc_model, style_image, content_image, feats_dict, callbacks)
 
         # Sanity evaluation
@@ -66,22 +66,22 @@ def main(argv):
         # Save the images to disk
         gen_image = sc_model.get_gen_image()
         for filename, image in [('style.jpg', style_image), ('content.jpg', content_image),
-                                (f'{loss_key}_gen.jpg', gen_image)]:
+                                (f'gen.jpg', gen_image)]:
             tf.keras.preprocessing.image.save_img(f'{loss_dir}/{filename}', tf.squeeze(image, 0))
         logging.info(f'images saved to {loss_dir}')
 
         # Metrics
-        logs_df = pd.read_csv(f'{loss_dir}/{loss_key}_logs.csv')
+        logs_df = pd.read_csv(f'{loss_dir}/logs.csv')
 
         orig_feat_model = sc_model.feat_model
         sc_model.feat_model = raw_feat_model
         sc_model = compile_sc_model(strategy, sc_model, loss_key)
         raw_metrics = sc_model.evaluate((style_image, content_image), raw_feats_dict, batch_size=1, return_dict=True)
         raw_metrics = pd.Series(raw_metrics)
-        raw_metrics.to_csv(f'{loss_dir}/{loss_key}_raw_metrics.csv')
+        raw_metrics.to_csv(f'{loss_dir}/raw_metrics.csv')
         sc_model.feat_model = orig_feat_model
 
-        plot_metrics(logs_df, path=f'{loss_dir}/{loss_key}_plots.jpg')
+        plot_metrics(logs_df, path=f'{loss_dir}/plots.jpg')
         logging.info(f'metrics saved to {loss_dir}')
 
 
