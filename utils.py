@@ -75,14 +75,6 @@ def plot_metrics(logs_df, filename):
     f.savefig(os.path.join('./out', filename))
 
 
-def log_metrics(logs_df):
-    last_epoch_logs = logs_df.iloc[-1]
-    logging.info(f"total loss: {last_epoch_logs['loss']:.4}")
-    for metric in ['mean', 'var', 'gram', 'skew']:
-        mean_val = last_epoch_logs.filter(like=metric).sum()
-        logging.info(f'total {metric:.4} loss: {mean_val:.4}')
-
-
 def log_feat_distribution(feats_dict):
     moments = []
     for style_feats in feats_dict['style']:

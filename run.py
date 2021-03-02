@@ -7,7 +7,7 @@ from absl import logging
 import style_content_model as scm
 import utils
 from training import train, compile_sc_model
-from utils import plot_metrics, log_metrics, log_feat_distribution
+from utils import plot_metrics, log_feat_distribution
 
 FLAGS = flags.FLAGS
 
@@ -28,14 +28,15 @@ def main(argv):
     logging.info('making style-content model')
     image_shape = style_image.shape[1:]
     with strategy.scope():
-        feat_model = scm.make_feat_model(image_shape)
-        sc_model = scm.SCModel(feat_model)
+        raw_feat_model = scm.make_feat_model(image_shape)
+        sc_model = scm.SCModel(raw_feat_model)
         scm.configure(sc_model, style_image, content_image)
 
     # Plot the feature model structure
     tf.keras.utils.plot_model(sc_model.feat_model, './out/feat_model.jpg')
 
     # Get the style and content features
+    raw_feat_dict = raw_feat_model((style_image, content_image), training=False)
     feats_dict = sc_model.feat_model((style_image, content_image), training=False)
 
     # Log distribution statistics of the style image
@@ -63,7 +64,15 @@ def main(argv):
 
         # Metrics
         logs_df = pd.read_csv(f'out/{loss_key}_logs.csv')
-        log_metrics(logs_df)
+
+        orig_feat_model = sc_model.feat_model
+        sc_model.feat_model = raw_feat_model
+        sc_model = compile_sc_model(strategy, sc_model, loss_key)
+        raw_metrics = sc_model.evaluate((style_image, content_image), raw_feat_dict, batch_size=1, return_dict=True)
+        raw_metrics = pd.Series(raw_metrics)
+        raw_metrics.to_csv(f'out/{loss_key}_raw_metrics.csv')
+        sc_model.feat_model = orig_feat_model
+
         plot_metrics(logs_df, filename=f'{loss_key}_plots.jpg')
         logging.info('metrics saved to ./out')
 
