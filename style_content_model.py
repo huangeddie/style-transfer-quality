@@ -3,9 +3,6 @@ from absl import flags
 from absl import logging
 from sklearn import decomposition
 
-import dist_losses
-import dist_metrics
-
 FLAGS = flags.FLAGS
 
 flags.DEFINE_enum('feat_model', 'vgg19', ['vgg19', 'nasnetlarge', 'fast'],
@@ -146,20 +143,6 @@ def make_feat_model(input_shape):
 
     return tf.keras.Model([style_model.input, content_model.input],
                           {'style': new_style_outputs, 'content': new_content_outputs})
-
-
-def compile_sc_model(strategy, sc_model, loss_key):
-    with strategy.scope():
-        loss_dict = {'style': [dist_losses.loss_dict[loss_key] for _ in sc_model.feat_model.output['style']]}
-        metrics = [dist_metrics.MeanLoss(), dist_metrics.VarLoss(), dist_metrics.GramLoss(), dist_metrics.SkewLoss()]
-        metric_dict = {'style': [metrics for _ in sc_model.feat_model.output['style']],
-                       'content': [[] for _ in sc_model.feat_model.output['content']]}
-        if FLAGS.content_image is not None:
-            loss_dict['content'] = [tf.keras.losses.MeanSquaredError() for _ in sc_model.feat_model.output['content']]
-
-        sc_model.compile(tf.keras.optimizers.Adam(FLAGS.lr, FLAGS.beta1, FLAGS.beta2, FLAGS.epsilon),
-                         loss=loss_dict, metrics=metric_dict)
-    return sc_model
 
 
 def configure_sc_model(sc_model, style_image, content_image):

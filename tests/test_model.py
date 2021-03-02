@@ -2,7 +2,7 @@ import tensorflow as tf
 from absl import flags
 from absl.testing import absltest
 
-import style_content as sc
+import style_content_model as scm
 
 FLAGS = flags.FLAGS
 
@@ -10,8 +10,8 @@ FLAGS = flags.FLAGS
 class TestModel(absltest.TestCase):
     def test_model_train_step(self):
         FLAGS(['', '--feat_model=fast'])
-        feat_model = sc.make_feat_model([32, 32, 3])
-        sc_model = sc.SCModel(feat_model)
+        feat_model = scm.make_feat_model([32, 32, 3])
+        sc_model = scm.SCModel(feat_model)
         # Random uniform doesn't support uint8
         x = tf.random.uniform([1, 32, 32, 3], maxval=255, dtype=tf.int32)
         y = tf.random.uniform([1, 32, 32, 3], maxval=255, dtype=tf.int32)
@@ -20,8 +20,8 @@ class TestModel(absltest.TestCase):
 
     def test_model_call(self):
         FLAGS(['', '--feat_model=fast'])
-        feat_model = sc.make_feat_model([32, 32, 3])
-        sc_model = sc.SCModel(feat_model)
+        feat_model = scm.make_feat_model([32, 32, 3])
+        sc_model = scm.SCModel(feat_model)
         # Random uniform doesn't support uint8
         x = tf.random.uniform([1, 32, 32, 3], maxval=255, dtype=tf.int32)
         y = tf.random.uniform([1, 32, 32, 3], maxval=255, dtype=tf.int32)
@@ -41,7 +41,7 @@ class TestModel(absltest.TestCase):
             tf.debugging.assert_equal(true_result, einsum_result)
 
     def test_pca_constant(self):
-        foo = tf.keras.Sequential([sc.PCA(2)])
+        foo = tf.keras.Sequential([scm.PCA(2)])
         out = foo(tf.random.normal([32, 16, 16, 4]))
         tf.debugging.assert_shapes([(out, [32, 16, 16, 2])])
         self.assertEqual(len(foo.trainable_weights), 0)
