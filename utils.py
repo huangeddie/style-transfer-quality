@@ -62,7 +62,8 @@ def compute_skewness(x, axes):
 def get_layer_grams(layer_feats):
     grams = []
     for feats in layer_feats:
-        grams.append(tf.einsum('bhwc,bhwd->bcd', feats, feats))
+        num_locs = tf.cast(tf.reduce_prod(feats.shape[:-1]), tf.float32)
+        grams.append(tf.einsum('bhwc,bhwd->bcd', feats, feats) / num_locs)
     return grams
 
 
