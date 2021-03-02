@@ -54,6 +54,9 @@ class SCModel(tf.keras.Model):
         self.gen_image = self.add_weight('gen_image', input_shape[0],
                                          initializer=tf.keras.initializers.RandomUniform(minval=0, maxval=255))
 
+    def reinit_gen_image(self):
+        self.gen_image.assign(tf.random.uniform(self.gen_image.shape, maxval=255, dtype=self.gen_image.dtype))
+
     def call(self, inputs, training=None, mask=None):
         return self.feat_model((self.gen_image, self.gen_image), training=training)
 
@@ -145,10 +148,8 @@ def make_feat_model(input_shape):
                           {'style': new_style_outputs, 'content': new_content_outputs})
 
 
-def make_and_compile_sc_model(strategy, image_shape, loss_key):
+def compile_sc_model(strategy, sc_model, loss_key):
     with strategy.scope():
-        sc_model = SCModel(image_shape)
-
         loss_dict = {'style': [dist_losses.loss_dict[loss_key] for _ in sc_model.feat_model.output['style']]}
         metrics = [dist_metrics.MeanLoss(), dist_metrics.VarLoss(), dist_metrics.GramLoss(), dist_metrics.SkewLoss()]
         metric_dict = {'style': [metrics for _ in sc_model.feat_model.output['style']],
@@ -164,9 +165,14 @@ def make_and_compile_sc_model(strategy, image_shape, loss_key):
 def configure_sc_model(sc_model, style_image, content_image):
     feat_model = sc_model.feat_model
 
+    # Build the gen image
+    sc_model((style_image, content_image))
+
+    # Configure the batch normalization layer
     feats_dict = feat_model((style_image, content_image), training=True)
     feat_model.trainable = False
 
+    # Configure the PCA layers if any
     if FLAGS.pca is not None:
         new_style_outputs = []
         for old_output, feats, in zip(feat_model.output['style'], feats_dict['style']):

@@ -63,12 +63,14 @@ def compute_skewness(x, axes):
 
 def plot_metrics(logs_df, filename):
     logs_df.set_index('epoch')
-    f, axes = plt.subplots(1, 4)
-    f.set_size_inches(16, 3)
-    logs_df.plot(y='loss', logy=True, ax=axes[0])
-    logs_df.filter(like='mean').plot(logy=True, ax=axes[1])
-    logs_df.filter(like='var').plot(logy=True, ax=axes[2])
-    logs_df.filter(like='skew').plot(logy=True, ax=axes[3])
+    f, axes = plt.subplots(2, 3)
+    f.set_size_inches(12, 5)
+    logs_df.plot(y='loss', logy=True, ax=axes[0, 0])
+    logs_df.filter(like='mean').plot(logy=True, ax=axes[1, 0])
+    logs_df.filter(like='var').plot(logy=True, ax=axes[0, 1])
+    logs_df.filter(like='gram').plot(logy=True, ax=axes[1, 1])
+    logs_df.filter(like='skew').plot(logy=True, ax=axes[0, 2])
+    axes[1, 2].remove()
     f.tight_layout()
     f.savefig(os.path.join('./out', filename))
 
@@ -76,7 +78,7 @@ def plot_metrics(logs_df, filename):
 def log_metrics(logs_df):
     last_epoch_logs = logs_df.iloc[-1]
     logging.info(f"total loss: {last_epoch_logs['loss']:.4}")
-    for metric in ['mean', 'var', 'skew']:
+    for metric in ['mean', 'var', 'gram', 'skew']:
         mean_val = last_epoch_logs.filter(like=metric).sum()
         logging.info(f'total {metric:.4} loss: {mean_val:.4}')
 

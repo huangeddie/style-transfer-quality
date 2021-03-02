@@ -20,23 +20,10 @@ flags.DEFINE_integer('train_steps', 100, 'train steps')
 flags.DEFINE_integer('verbose', 0, 'verbosity')
 
 
-def run_style_transfer(strategy, style_image, content_image, loss_key):
-    # Create the style-content model
-    logging.info('making style-content model')
-    image_shape = style_image.shape[1:]
-    sc_model = sc.make_and_compile_sc_model(strategy, image_shape, loss_key)
-
-    # Configure batch norm layers to normalize features of the style and content images
-    configure_sc_model(sc_model, style_image, content_image)
-
-    # Plot the feature model structure
-    tf.keras.utils.plot_model(sc_model.feat_model, './out/feat_model.jpg')
-
-    # Get the style and content features
-    feats_dict = sc_model.feat_model((style_image, content_image), training=False)
-
-    # Log distribution statistics of the style image
-    log_feat_distribution(feats_dict)
+def run_style_transfer(strategy, sc_model, style_image, content_image, feats_dict, loss_key):
+    # Reset gen image and recompile
+    sc_model.reinit_gen_image()
+    sc_model = sc.compile_sc_model(strategy, sc_model, loss_key)
 
     # Run the style model
     logging.info(f'loss function: {loss_key}')
@@ -54,7 +41,7 @@ def run_style_transfer(strategy, style_image, content_image, loss_key):
     gen_image = sc_model.get_gen_image()
     for filename, image in [('style.jpg', style_image), ('content.jpg', content_image),
                             (f'{loss_key}_gen.jpg', gen_image)]:
-        tf.keras.preprocessing.image.save_img(os.path.join('./out', filename), tf.squeeze(image, 0))
+        tf.keras.preprocessing.image.save_img(f'./out/{filename}', tf.squeeze(image, 0))
     logging.info('images saved to ./out')
 
     # Metrics
@@ -78,8 +65,26 @@ def main(argv):
     logging.info('loading images')
     style_image, content_image = utils.load_sc_images()
 
+    # Create the style-content model
+    logging.info('making style-content model')
+    image_shape = style_image.shape[1:]
+    with strategy.scope():
+        sc_model = sc.SCModel(image_shape)
+
+    # Configure batch norm layers to normalize features of the style and content images
+    configure_sc_model(sc_model, style_image, content_image)
+
+    # Plot the feature model structure
+    tf.keras.utils.plot_model(sc_model.feat_model, './out/feat_model.jpg')
+
+    # Get the style and content features
+    feats_dict = sc_model.feat_model((style_image, content_image), training=False)
+
+    # Log distribution statistics of the style image
+    log_feat_distribution(feats_dict)
+
     for loss_key in FLAGS.losses:
-        run_style_transfer(strategy, style_image, content_image, loss_key)
+        run_style_transfer(strategy, sc_model, style_image, content_image, feats_dict, loss_key)
 
 
 if __name__ == '__main__':
