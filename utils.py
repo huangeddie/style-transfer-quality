@@ -59,6 +59,13 @@ def compute_skewness(x, axes):
     return skew
 
 
+def get_layer_grams(layer_feats):
+    grams = []
+    for feats in layer_feats:
+        grams.append(tf.einsum('bhwc,bhwd->bcd', feats, feats))
+    return grams
+
+
 def plot_metrics(logs_df, path):
     logs_df.set_index('epoch')
     f, axes = plt.subplots(2, 3)
@@ -86,3 +93,18 @@ def log_feat_distribution(feats_dict, title):
     logging.info(f"\tvar: {[m[1].mean() for m in moments]}")
     logging.info(f"\tskew: {[m[2].mean() for m in moments]}")
     logging.info('=' * 100)
+
+
+def plot_layer_grams(raw_feats_dict, feats_dict, filepath):
+    raw_grams = get_layer_grams(raw_feats_dict['style'])
+    proj_grams = get_layer_grams(feats_dict['style'])
+    f, ax = plt.subplots(2, len(raw_grams))
+    f.set_size_inches(3, len(raw_grams) * 3)
+    for i, (raw_gram, proj_gram) in enumerate(zip(raw_grams, proj_grams)):
+        ax[0, i].set_title(f'raw gram {i}')
+        ax[0, i].imshow(tf.squeeze(raw_gram, 0))
+
+        ax[1, i].set_title(f'proj gram {i}')
+        ax[1, i].imshow(tf.squeeze(proj_gram, 0))
+    f.tight_layout()
+    f.savefig(filepath)

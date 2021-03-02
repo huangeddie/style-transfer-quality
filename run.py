@@ -7,9 +7,8 @@ from absl import flags
 from absl import logging
 
 import style_content_model as scm
-import utils
 from training import train, compile_sc_model
-from utils import plot_metrics, log_feat_distribution
+from utils import plot_metrics, log_feat_distribution, plot_layer_grams, setup, load_sc_images
 
 FLAGS = flags.FLAGS
 
@@ -20,11 +19,11 @@ def main(argv):
     del argv  # Unused.
 
     # Setup
-    strategy = utils.setup()
+    strategy = setup()
 
     # Load style/content image
     logging.info('loading images')
-    style_image, content_image = utils.load_sc_images()
+    style_image, content_image = load_sc_images()
 
     # Create the style-content model
     logging.info('making style-content model')
@@ -32,6 +31,7 @@ def main(argv):
     with strategy.scope():
         raw_feat_model = scm.make_feat_model(image_shape)
         sc_model = scm.SCModel(raw_feat_model)
+        # Configure the model to the style and content images
         scm.configure(sc_model, style_image, content_image)
 
     # Plot the feature model structure
@@ -44,6 +44,9 @@ def main(argv):
     # Log distribution statistics of the style image
     log_feat_distribution(raw_feats_dict, 'raw layer average style moments')
     log_feat_distribution(feats_dict, 'projected layer average style moments')
+
+    # Plot the gram matrices
+    plot_layer_grams(raw_feats_dict, feats_dict, filepath='./out/gram.jpg')
 
     # Run the transfer for each loss
     for loss_key in FLAGS.losses:
