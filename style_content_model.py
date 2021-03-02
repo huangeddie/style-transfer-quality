@@ -33,7 +33,7 @@ class PCA(tf.keras.layers.Layer):
         self.projection = self.add_weight('projection', [input_shape[-1], self.out_dim], trainable=False)
 
     def configure(self, feats):
-        pca = decomposition.PCA(n_components=self.out_dim)
+        pca = decomposition.PCA(n_components=self.out_dim, whiten=True)
         channels = tf.shape(feats)[-1]
         pca.fit(tf.reshape(feats, [-1, channels]))
         self.projection.assign(tf.constant(pca.components_.T, dtype=self.projection.dtype))
@@ -126,10 +126,20 @@ def make_feat_model(input_shape):
         content_output = nasnet_content(x)
 
     elif FLAGS.feat_model == 'fast':
-        avg_pool = tf.keras.layers.AveragePooling2D(pool_size=4)
+        avg_pool1 = tf.keras.layers.AveragePooling2D(pool_size=2)
+        avg_pool2 = tf.keras.layers.AveragePooling2D(pool_size=2)
 
-        style_output = avg_pool(style_input)
-        content_output = avg_pool(content_input)
+        x = style_input
+        style_output = []
+        for layer in [avg_pool1, avg_pool2]:
+            x = layer(x)
+            style_output.append(x)
+
+        x = content_input
+        content_output = []
+        for layer in [avg_pool1, avg_pool2]:
+            x = layer(x)
+            content_output.append(x)
 
     else:
         raise ValueError(f'unknown feature model: {FLAGS.feat_model}')

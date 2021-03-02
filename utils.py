@@ -73,7 +73,7 @@ def plot_metrics(logs_df, path):
     f.savefig(path)
 
 
-def log_feat_distribution(feats_dict):
+def log_feat_distribution(feats_dict, title):
     moments = []
     for style_feats in feats_dict['style']:
         m1 = tf.reduce_mean(style_feats, axis=[1, 2]).numpy()
@@ -81,7 +81,7 @@ def log_feat_distribution(feats_dict):
         m3 = compute_skewness(style_feats, axes=[1, 2]).numpy()
         moments.append([m1, m2, m3])
     logging.info('=' * 100)
-    logging.info('average style moments')
+    logging.info(title)
     logging.info(f"\tmean: {[m[0].mean() for m in moments]}")
     logging.info(f"\tvar: {[m[1].mean() for m in moments]}")
     logging.info(f"\tskew: {[m[2].mean() for m in moments]}")

@@ -38,11 +38,12 @@ def main(argv):
     tf.keras.utils.plot_model(sc_model.feat_model, './out/feat_model.jpg')
 
     # Get the style and content features
-    raw_feat_dict = raw_feat_model((style_image, content_image), training=False)
+    raw_feats_dict = raw_feat_model((style_image, content_image), training=False)
     feats_dict = sc_model.feat_model((style_image, content_image), training=False)
 
     # Log distribution statistics of the style image
-    log_feat_distribution(feats_dict)
+    log_feat_distribution(raw_feats_dict, 'raw layer average style moments')
+    log_feat_distribution(feats_dict, 'projected layer average style moments')
 
     # Run the transfer for each loss
     for loss_key in FLAGS.losses:
@@ -75,7 +76,7 @@ def main(argv):
         orig_feat_model = sc_model.feat_model
         sc_model.feat_model = raw_feat_model
         sc_model = compile_sc_model(strategy, sc_model, loss_key)
-        raw_metrics = sc_model.evaluate((style_image, content_image), raw_feat_dict, batch_size=1, return_dict=True)
+        raw_metrics = sc_model.evaluate((style_image, content_image), raw_feats_dict, batch_size=1, return_dict=True)
         raw_metrics = pd.Series(raw_metrics)
         raw_metrics.to_csv(f'{loss_dir}/{loss_key}_raw_metrics.csv')
         sc_model.feat_model = orig_feat_model
