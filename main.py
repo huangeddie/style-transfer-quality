@@ -58,7 +58,6 @@ def run_style_transfer(strategy, sc_model, style_image, content_image, feats_dic
 
 def main(argv):
     del argv  # Unused.
-    logging.info(FLAGS.losses)
     strategy = utils.setup()
 
     # Load style/content image
@@ -69,9 +68,10 @@ def main(argv):
     logging.info('making style-content model')
     image_shape = style_image.shape[1:]
     with strategy.scope():
-        sc_model = sc.SCModel(image_shape)
+        feat_model = sc.make_feat_model(image_shape)
+        sc_model = sc.SCModel(feat_model)
 
-    # Configure batch norm layers to normalize features of the style and content images
+    # Configure the model based on the style and content images
     configure_sc_model(sc_model, style_image, content_image)
 
     # Plot the feature model structure

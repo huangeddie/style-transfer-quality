@@ -46,9 +46,9 @@ class PCA(tf.keras.layers.Layer):
 
 
 class SCModel(tf.keras.Model):
-    def __init__(self, input_shape, *args, **kwargs):
+    def __init__(self, feat_model, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.feat_model = make_feat_model(input_shape)
+        self.feat_model = feat_model
 
     def build(self, input_shape):
         self.gen_image = self.add_weight('gen_image', input_shape[0],
