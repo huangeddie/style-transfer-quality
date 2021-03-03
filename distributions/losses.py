@@ -1,5 +1,7 @@
 import tensorflow as tf
 
+from distributions import compute_wass_dist
+
 
 class FirstMomentLoss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
@@ -51,12 +53,8 @@ class GramianLoss(tf.keras.losses.Loss):
 
 class WassLoss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
-        shape = tf.shape(y_true)
-        bsz, num_locs, channels = shape[0], shape[1] * shape[2], shape[-1]
-        y_true = tf.reshape(y_true, [bsz, num_locs, channels])
-        y_pred = tf.reshape(y_pred, [bsz, num_locs, channels])
-        y, x = tf.sort(y_true, axis=1), tf.sort(y_pred, axis=1)
-        return (y - x) ** 2
+        wass_dist = compute_wass_dist(y_true, y_pred)
+        return wass_dist
 
 
 loss_dict = {'m1': FirstMomentLoss(), 'm2': SecondMomentLoss(), 'gram': GramianLoss(), 'm3': ThirdMomentLoss(),

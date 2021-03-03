@@ -1,5 +1,6 @@
 import tensorflow as tf
-from scipy import stats
+
+from distributions import compute_wass_dist
 
 
 class MeanLoss(tf.keras.metrics.Metric):
@@ -119,23 +120,13 @@ class SkewLoss(tf.keras.metrics.Metric):
         self.skew_loss.assign(0.0)
 
 
-def py_wass_dist(y_true, y_pred):
-    wass_dist = []
-    bsz = len(y_true)
-    for i in range(bsz):
-        wass_dist.append(stats.wasserstein_distance(y_true[i].numpy().flatten(), y_pred[i].numpy().flatten()))
-    wass_dist = tf.constant(wass_dist, dtype=tf.float32)
-
-    return wass_dist
-
-
 class WassDist(tf.keras.metrics.Metric):
     def __init__(self, name="wass_dist", **kwargs):
         super().__init__(name=name, **kwargs)
         self.wass_dist = self.add_weight(name="wass_dist", initializer="zeros")
 
     def update_state(self, y_true, y_pred, sample_weight=None):
-        wass_dist = tf.py_function(py_wass_dist, [y_true, y_pred], [tf.float32])
+        wass_dist = compute_wass_dist(y_pred, y_true)
 
         self.wass_dist.assign_add(tf.reduce_mean(wass_dist))
 
