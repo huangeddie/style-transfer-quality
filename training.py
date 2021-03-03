@@ -24,7 +24,7 @@ def train(sc_model, style_image, content_image, feats_dict, callbacks):
 def compile_sc_model(strategy, sc_model, loss_key):
     with strategy.scope():
         loss_dict = {'style': [losses.loss_dict[loss_key] for _ in sc_model.feat_model.output['style']]}
-        metric_dict = {'style': [[metrics.MeanLoss(), metrics.VarLoss(), metrics.GramLoss(), metrics.SkewLoss()]
+        metric_dict = {'style': [[metrics.WassDist(), metrics.MeanLoss(), metrics.VarLoss(), metrics.GramLoss(), metrics.SkewLoss()]
                                  for _ in sc_model.feat_model.output['style']],
                        'content': [[] for _ in sc_model.feat_model.output['content']]}
         if FLAGS.content_image is not None:
