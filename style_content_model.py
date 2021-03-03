@@ -175,7 +175,7 @@ def configure_feat_model(sc_model, style_image, content_image):
     feat_model.trainable = False
 
     # Add and configure the PCA layers if requested
-    if FLAGS.pca is not None:
+    if FLAGS.pca is not None and FLAGS.pca > 0:
         all_new_outputs = []
 
         for key in ['style', 'content']:
