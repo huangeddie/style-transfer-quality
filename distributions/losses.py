@@ -49,4 +49,11 @@ class GramianLoss(tf.keras.losses.Loss):
         return (gram_true - gram_pred) ** 2
 
 
-loss_dict = {'m1': FirstMomentLoss(), 'm2': SecondMomentLoss(), 'gram': GramianLoss(), 'm3': ThirdMomentLoss()}
+class WassLoss(tf.keras.losses.Loss):
+    def call(self, y_true, y_pred):
+        y, x = tf.sort(y_true), tf.sort(y_pred)
+        return (y - x) ** 2
+
+
+loss_dict = {'m1': FirstMomentLoss(), 'm2': SecondMomentLoss(), 'gram': GramianLoss(), 'm3': ThirdMomentLoss(),
+             'wass': WassLoss()}
