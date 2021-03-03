@@ -123,7 +123,7 @@ def py_wass_dist(y_true, y_pred):
     wass_dist = []
     bsz = len(y_true)
     for i in range(bsz):
-        wass_dist.append(stats.wasserstein_distance(y_true[i].numpy(), y_pred[i].numpy()))
+        wass_dist.append(stats.wasserstein_distance(y_true[i].numpy().flatten(), y_pred[i].numpy().flatten()))
     wass_dist = tf.constant(wass_dist, dtype=tf.float32)
 
     return wass_dist

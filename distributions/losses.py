@@ -51,7 +51,11 @@ class GramianLoss(tf.keras.losses.Loss):
 
 class WassLoss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
-        y, x = tf.sort(y_true), tf.sort(y_pred)
+        shape = tf.shape(y_true)
+        bsz, num_locs, channels = shape[0], shape[1] * shape[2], shape[-1]
+        y_true = tf.reshape(y_true, [bsz, num_locs, channels])
+        y_pred = tf.reshape(y_pred, [bsz, num_locs, channels])
+        y, x = tf.sort(y_true, axis=1), tf.sort(y_pred, axis=1)
         return (y - x) ** 2
 
 
