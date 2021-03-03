@@ -10,6 +10,7 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_integer('train_steps', 100, 'train steps')
 flags.DEFINE_integer('verbose', 0, 'verbosity')
+flags.DEFINE_bool('cosine_decay', False, 'cosine decay')
 
 
 def train(sc_model, style_image, content_image, feats_dict, callbacks):
@@ -30,7 +31,10 @@ def compile_sc_model(strategy, sc_model, loss_key):
         if FLAGS.content_image is not None:
             loss_dict['content'] = [tf.keras.losses.MeanSquaredError() for _ in sc_model.feat_model.output['content']]
 
-        lr_schedule = tf.keras.optimizers.schedules.CosineDecay(FLAGS.lr, FLAGS.train_steps)
+        if FLAGS.cosine_decay:
+            lr_schedule = tf.keras.optimizers.schedules.CosineDecay(FLAGS.lr, FLAGS.train_steps)
+        else:
+            lr_schedule = FLAGS.lr
         sc_model.compile(tf.keras.optimizers.Adam(lr_schedule, FLAGS.beta1, FLAGS.beta2, FLAGS.epsilon),
                          loss=loss_dict, metrics=metric_dict)
     return sc_model
