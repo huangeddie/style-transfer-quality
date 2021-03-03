@@ -171,7 +171,7 @@ def configure(sc_model, style_image, content_image):
     if FLAGS.pca is not None:
         new_style_outputs = []
         for old_output, feats, in zip(feat_model.output['style'], feats_dict['style']):
-            n_samples = tf.reduce_prod(old_output.shape[:-1])
+            n_samples = tf.reduce_prod(old_output.shape[1:-1])
             n_features = old_output.shape[-1]
             pca = PCA(min(FLAGS.pca, n_features, n_samples))
             new_style_outputs.append(pca(old_output))
@@ -179,7 +179,7 @@ def configure(sc_model, style_image, content_image):
 
         new_content_outputs = []
         for old_output, feats, in zip(feat_model.output['content'], feats_dict['content']):
-            n_samples = tf.reduce_prod(old_output.shape[:-1])
+            n_samples = tf.reduce_prod(old_output.shape[1:-1])
             n_features = old_output.shape[-1]
             pca = PCA(min(FLAGS.pca, n_features, n_samples))
             new_content_outputs.append(pca(old_output))
