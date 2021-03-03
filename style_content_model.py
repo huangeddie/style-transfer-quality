@@ -169,24 +169,20 @@ def configure(sc_model, style_image, content_image):
 
     # Configure the PCA layers if any
     if FLAGS.pca is not None:
-        new_style_outputs = []
-        for old_output, feats, in zip(feat_model.output['style'], feats_dict['style']):
-            n_samples = tf.reduce_prod(old_output.shape[1:-1])
-            n_features = old_output.shape[-1]
-            pca = PCA(min(FLAGS.pca, n_features, n_samples))
-            new_style_outputs.append(pca(old_output))
-            pca.configure(feats)
+        all_new_outputs = []
 
-        new_content_outputs = []
-        for old_output, feats, in zip(feat_model.output['content'], feats_dict['content']):
-            n_samples = tf.reduce_prod(old_output.shape[1:-1])
-            n_features = old_output.shape[-1]
-            pca = PCA(min(FLAGS.pca, n_features, n_samples))
-            new_content_outputs.append(pca(old_output))
-            pca.configure(feats)
+        for key in ['style', 'content']:
+            new_outputs = []
+            for old_output, feats, in zip(feat_model.output[key], feats_dict[key]):
+                n_samples = old_output.shape[1] * old_output.shape[2]
+                n_features = old_output.shape[-1]
+                pca = PCA(min(FLAGS.pca, n_features, n_samples))
+                new_outputs.append(pca(old_output))
+                pca.configure(feats)
+            all_new_outputs.append(new_outputs)
 
         new_feat_model = tf.keras.models.Model(feat_model.input,
-                                               {'style': new_style_outputs, 'content': new_content_outputs})
+                                               {'style': all_new_outputs[0], 'content': all_new_outputs[1]})
         logging.info(f'features projected to {FLAGS.pca} maximum dimensions with PCA')
 
         sc_model.feat_model = new_feat_model
