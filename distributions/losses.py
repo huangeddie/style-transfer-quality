@@ -53,7 +53,7 @@ class GramianLoss(tf.keras.losses.Loss):
 
 class WassLoss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
-        wass_dist = compute_wass_dist(y_true, y_pred)
+        wass_dist = compute_wass_dist(y_true, y_pred, p=2)
         return wass_dist
 
 
