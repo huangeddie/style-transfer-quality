@@ -1,4 +1,5 @@
 import tensorflow as tf
+from scipy import stats
 
 
 class MeanLoss(tf.keras.metrics.Metric):
@@ -116,3 +117,31 @@ class SkewLoss(tf.keras.metrics.Metric):
     def reset_states(self):
         # The state of the metric will be reset at the start of each epoch.
         self.skew_loss.assign(0.0)
+
+
+def py_wass_dist(y_true, y_pred):
+    wass_dist = []
+    bsz = len(y_true)
+    for i in range(bsz):
+        wass_dist.append(stats.wasserstein_distance(y_true[i].numpy(), y_pred[i].numpy()))
+    wass_dist = tf.constant(wass_dist, dtype=tf.float32)
+
+    return wass_dist
+
+
+class WassDist(tf.keras.metrics.Metric):
+    def __init__(self, name="wass_dist", **kwargs):
+        super().__init__(name=name, **kwargs)
+        self.wass_dist = self.add_weight(name="wass_dist", initializer="zeros")
+
+    def update_state(self, y_true, y_pred, sample_weight=None):
+        wass_dist = tf.py_function(py_wass_dist, [y_true, y_pred], [tf.float32])
+
+        self.wass_dist.assign_add(tf.reduce_mean(wass_dist))
+
+    def result(self):
+        return self.wass_dist
+
+    def reset_states(self):
+        # The state of the metric will be reset at the start of each epoch.
+        self.wass_dist.assign(0.0)
