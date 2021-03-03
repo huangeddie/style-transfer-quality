@@ -33,7 +33,7 @@ def main(argv):
         raw_feat_model = scm.make_feat_model(image_shape)
         sc_model = scm.SCModel(raw_feat_model)
         # Configure the model to the style and content images
-        scm.configure(sc_model, style_image, content_image)
+        scm.configure_feat_model(sc_model, style_image, content_image)
 
     # Plot the feature model structure
     tf.keras.utils.plot_model(sc_model.feat_model, './out/feat_model.jpg')

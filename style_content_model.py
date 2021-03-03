@@ -7,6 +7,7 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_enum('feat_model', 'vgg19', ['vgg19', 'nasnetlarge', 'fast'],
                   'whether or not to cache the features when performing style transfer')
+flags.DEFINE_bool('batch_norm', False, 'batch norm based on the style & content features')
 flags.DEFINE_integer('pca', None, 'maximum dimension of features enforced with PCA')
 flags.DEFINE_bool('whiten', False, 'whiten the components of PCA')
 
@@ -148,26 +149,32 @@ def make_feat_model(input_shape):
 
     style_model = tf.keras.Model(style_input, style_output)
     content_model = tf.keras.Model(content_input, content_output)
-    new_style_outputs = [tf.keras.layers.BatchNormalization(scale=False, center=False, momentum=0)(output) for
-                         output in style_model.outputs]
-    new_content_outputs = [tf.keras.layers.BatchNormalization(scale=False, center=False, momentum=0)(output) for
-                           output in content_model.outputs]
+    if FLAGS.batch_norm:
+        new_style_outputs = [tf.keras.layers.BatchNormalization(scale=False, center=False, momentum=0)(output) for
+                             output in style_model.outputs]
+        new_content_outputs = [tf.keras.layers.BatchNormalization(scale=False, center=False, momentum=0)(output) for
+                               output in content_model.outputs]
 
-    return tf.keras.Model([style_model.input, content_model.input],
-                          {'style': new_style_outputs, 'content': new_content_outputs})
+        sc_model = tf.keras.Model([style_model.input, content_model.input],
+                                  {'style': new_style_outputs, 'content': new_content_outputs})
+        logging.info('added batch normalization')
+    else:
+        sc_model = tf.keras.Model([style_model.input, content_model.input],
+                                  {'style': style_model.outputs, 'content': content_model.outputs})
+    return sc_model
 
 
-def configure(sc_model, style_image, content_image):
+def configure_feat_model(sc_model, style_image, content_image):
     feat_model = sc_model.feat_model
 
     # Build the gen image
     sc_model((style_image, content_image))
 
-    # Configure the batch normalization layer
+    # Configure the batch normalization layer if any
     feats_dict = feat_model((style_image, content_image), training=True)
     feat_model.trainable = False
 
-    # Configure the PCA layers if any
+    # Add and configure the PCA layers if requested
     if FLAGS.pca is not None:
         all_new_outputs = []
 
