@@ -33,6 +33,7 @@ def compile_sc_model(strategy, sc_model, loss_key):
 
         if FLAGS.cosine_decay:
             lr_schedule = tf.keras.optimizers.schedules.CosineDecay(FLAGS.lr, FLAGS.train_steps)
+            logging.info('using cosine decay lr schedule')
         else:
             lr_schedule = FLAGS.lr
         sc_model.compile(tf.keras.optimizers.Adam(lr_schedule, FLAGS.beta1, FLAGS.beta2, FLAGS.epsilon),
