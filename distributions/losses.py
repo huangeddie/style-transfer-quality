@@ -58,9 +58,8 @@ class WassLoss(tf.keras.losses.Loss):
 
 class VarWassLoss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
-        w1 = compute_wass_dist(y_true, y_pred, p=2)
-        w2 = compute_wass_dist(y_true ** 2, y_pred ** 2, p=2)
-        return w1 + w2
+        wass_dist = compute_wass_dist(y_true ** 2, y_pred ** 2, p=2)
+        return wass_dist
 
 
 loss_dict = {'m1': FirstMomentLoss(), 'm2': SecondMomentLoss(), 'gram': GramianLoss(), 'm3': ThirdMomentLoss(),
