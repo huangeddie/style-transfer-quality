@@ -32,17 +32,24 @@ class PCA(tf.keras.layers.Layer):
         self.out_dim = out_dim
 
     def build(self, input_shape):
-        self.projection = self.add_weight('projection', [input_shape[-1], self.out_dim], trainable=False)
+        feat_dim = input_shape[-1]
+        self.mean = self.add_weight('mean', [1, feat_dim], trainable=False)
+        self.projection = self.add_weight('projection', [feat_dim, self.out_dim], trainable=False)
 
     def configure(self, feats):
         pca = decomposition.PCA(n_components=self.out_dim, whiten=FLAGS.whiten)
         feats_shape = tf.shape(feats)
-        n_samples, channels = tf.reduce_prod(feats_shape[:-1]), feats_shape[-1]
-        pca.fit(tf.reshape(feats, [-1, channels]))
+        n_samples, feat_dim = tf.reduce_prod(feats_shape[:-1]), feats_shape[-1]
+        feats = tf.reshape(feats, [-1, feat_dim])
+        mu = tf.constant(tf.reduce_mean(feats, axis=0, keepdims=True), dtype=self.mean.dtype)
+        self.mean.assign(mu)
+
+        pca.fit(feats - mu)
         self.projection.assign(tf.constant(pca.components_.T, dtype=self.projection.dtype))
 
     def call(self, inputs, **kwargs):
-        return tf.einsum('bhwc,cd->bhwd', inputs, self.projection)
+        x = inputs - tf.reshape(self.mean, [1, 1, 1, -1])
+        return tf.einsum('bhwc,cd->bhwd', x, self.projection)
 
 
 class SCModel(tf.keras.Model):
