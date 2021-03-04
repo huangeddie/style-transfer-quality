@@ -13,7 +13,7 @@ from utils import plot_metrics, log_feat_distribution, plot_layer_grams, setup, 
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_multi_enum('losses', ['m2'], ['m1', 'm2', 'gram', 'm3', 'wass', 'varwass'], 'type of loss to use')
+flags.DEFINE_multi_enum('losses', ['m2'], ['m1', 'm2', 'gram', 'm3', 'wass'], 'type of loss to use')
 
 
 def main(argv):
