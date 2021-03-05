@@ -67,18 +67,14 @@ def get_layer_grams(layer_feats):
     return grams
 
 
-def plot_metrics(logs_df, path):
-    logs_df.set_index('epoch')
-    f, axes = plt.subplots(2, 3)
-    f.set_size_inches(12, 5)
-    logs_df.plot(y='loss', logy=True, ax=axes[0, 0])
-    logs_df.filter(like='wass').plot(logy=True, ax=axes[1, 0])
-    logs_df.filter(like='mean').plot(logy=True, ax=axes[0, 1])
-    logs_df.filter(like='var').plot(logy=True, ax=axes[1, 1])
-    logs_df.filter(like='gram').plot(logy=True, ax=axes[0, 2])
-    logs_df.filter(like='skew').plot(logy=True, ax=axes[1, 2])
-    f.tight_layout()
-    f.savefig(path)
+def plot_loss(logs_df, path):
+    plt.figure()
+    logs_df = logs_df.filter(like='loss')
+    logs_df.plot(logy=True)
+    plt.xlabel('train steps')
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(path)
 
 
 def log_feat_distribution(feats_dict, title):

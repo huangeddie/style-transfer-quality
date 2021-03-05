@@ -22,15 +22,12 @@ def train(sc_model, style_image, content_image, feats_dict, callbacks):
     logging.info(f'training took {duration}')
 
 
-def compile_sc_model(strategy, sc_model, loss_key):
+def compile_sc_model(strategy, sc_model, loss_key, with_metrics):
     with strategy.scope():
         loss_dict = {'style': [losses.loss_dict[loss_key] for _ in sc_model.feat_model.output['style']]}
         for loss in loss_dict.values():
             if isinstance(loss, losses.CoWassLoss):
                 loss.total_steps.assign(FLAGS.train_steps)
-        metric_dict = {'style': [[metrics.WassDist(), metrics.MeanLoss(), metrics.VarLoss(), metrics.GramLoss(), metrics.SkewLoss()]
-                                 for _ in sc_model.feat_model.output['style']],
-                       'content': [[] for _ in sc_model.feat_model.output['content']]}
         if FLAGS.content_image is not None:
             loss_dict['content'] = [tf.keras.losses.MeanSquaredError() for _ in sc_model.feat_model.output['content']]
 
@@ -39,6 +36,14 @@ def compile_sc_model(strategy, sc_model, loss_key):
             logging.info('using cosine decay lr schedule')
         else:
             lr_schedule = FLAGS.lr
+
+        if with_metrics:
+            metric_dict = {'style': [
+                [metrics.WassDist(), metrics.MeanLoss(), metrics.VarLoss(), metrics.GramLoss(), metrics.SkewLoss()]
+                for _ in sc_model.feat_model.output['style']],
+                           'content': [[] for _ in sc_model.feat_model.output['content']]}
+        else:
+            metric_dict = None
         sc_model.compile(tf.keras.optimizers.Adam(lr_schedule, FLAGS.beta1, FLAGS.beta2, FLAGS.epsilon),
                          loss=loss_dict, metrics=metric_dict)
     return sc_model

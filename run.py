@@ -9,7 +9,7 @@ from absl import logging
 
 import style_content_model as scm
 from training import train, compile_sc_model
-from utils import plot_metrics, log_feat_distribution, plot_layer_grams, setup, load_sc_images
+from utils import plot_loss, log_feat_distribution, plot_layer_grams, setup, load_sc_images
 
 FLAGS = flags.FLAGS
 
@@ -58,7 +58,7 @@ def main(argv):
 
         # Reset gen image and recompile
         sc_model.reinit_gen_image()
-        sc_model = compile_sc_model(strategy, sc_model, loss_key)
+        sc_model = compile_sc_model(strategy, sc_model, loss_key, with_metrics=False)
 
         # Style transfer
         logging.info(f'loss function: {loss_key}')
@@ -80,14 +80,14 @@ def main(argv):
 
         orig_feat_model = sc_model.feat_model
         sc_model.feat_model = raw_feat_model
-        sc_model = compile_sc_model(strategy, sc_model, loss_key)
+        sc_model = compile_sc_model(strategy, sc_model, loss_key, with_metrics=True)
         raw_metrics = sc_model.evaluate((style_image, content_image), raw_feats_dict, batch_size=1, return_dict=True)
         raw_metrics = pd.Series(raw_metrics)
         for metric in ['wass', 'mean', 'var', 'gram', 'skew']:
             raw_metrics.filter(like=metric).to_csv(f'{loss_dir}/raw_metrics.csv', mode='a')
         sc_model.feat_model = orig_feat_model
 
-        plot_metrics(logs_df, path=f'{loss_dir}/plots.jpg')
+        plot_loss(logs_df, path=f'{loss_dir}/plots.jpg')
         logging.info(f'metrics saved to {loss_dir}')
 
 
