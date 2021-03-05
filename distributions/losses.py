@@ -1,7 +1,10 @@
 import tensorflow as tf
 import tensorflow_probability as tfp
+from absl import flags
 
 from distributions import compute_wass_dist, reshape_to_feats
+
+FLAGS = flags.FLAGS
 
 
 class FirstMomentLoss(tf.keras.losses.Loss):
@@ -22,6 +25,7 @@ class SecondMomentLoss(tf.keras.losses.Loss):
         mu2, var2 = tf.nn.moments(feats2, axes=[1, 2], keepdims=True)
 
         return (mu1 - mu2) ** 2 + (var1 - var2) ** 2
+
 
 class CovarLoss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
@@ -79,6 +83,11 @@ class WassLoss(tf.keras.losses.Loss):
 
 
 class CoWassLoss(tf.keras.losses.Loss):
+    def __init__(self, total_steps, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.total_steps = tf.constant(total_steps, tf.float32)
+        self.curr_step = tf.constant(0, tf.float32)
+
     def call(self, y_true, y_pred):
         wass_loss = compute_wass_dist(y_true, y_pred, p=2)
 
@@ -90,8 +99,12 @@ class CoWassLoss(tf.keras.losses.Loss):
         tf.assert_rank(wass_loss, 2)
         tf.assert_rank(covar_loss, 3)
 
-        return tf.reduce_mean(wass_loss, axis=1) + tf.reduce_mean(covar_loss, axis=[1, 2])
+        alpha = self.curr_step / self.total_steps
+        loss = alpha * tf.reduce_mean(wass_loss, axis=1) + tf.reduce_mean(covar_loss, axis=[1, 2])
+
+        self.curr_step.assign_add(tf.ones_like(self.curr_step))
+        return loss
 
 
-loss_dict = {'m1': FirstMomentLoss(), 'm2': SecondMomentLoss(), 'covar':CovarLoss(), 'gram': GramianLoss(),
-             'm3': ThirdMomentLoss(), 'wass': WassLoss(), 'cowass': CoWassLoss()}
+loss_dict = {'m1': FirstMomentLoss(), 'm2': SecondMomentLoss(), 'covar': CovarLoss(), 'gram': GramianLoss(),
+             'm3': ThirdMomentLoss(), 'wass': WassLoss(), 'cowass': CoWassLoss(FLAGS.train_steps)}
