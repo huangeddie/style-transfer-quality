@@ -92,16 +92,21 @@ class CoWassLoss(tf.keras.losses.Loss):
         wass_loss = compute_wass_dist(y_true, y_pred, p=2)
 
         feats1, feats2 = reshape_to_feats(y_true, y_pred)
+
+        mu1 = tf.reduce_mean(feats1, axis=1, keepdims=True)
+        mu2 = tf.reduce_mean(feats2, axis=1, keepdims=True)
+
+        mean_loss = tf.reduce_mean((mu1 - mu2) ** 2, axis=1)
+
         covar1 = tfp.stats.covariance(feats1, sample_axis=1)
         covar2 = tfp.stats.covariance(feats2, sample_axis=1)
-        covar_loss = (covar1 - covar2) ** 2
+        covar_loss = tf.reduce_mean((covar1 - covar2) ** 2, axis=[1, 2])
 
         tf.assert_rank(wass_loss, 2)
-        tf.assert_rank(covar_loss, 3)
 
         alpha = self.curr_step / self.total_steps
         alpha = tf.minimum(alpha, tf.ones_like(alpha))
-        loss = alpha * tf.reduce_mean(wass_loss, axis=1) + tf.reduce_mean(covar_loss, axis=[1, 2])
+        loss = alpha * tf.reduce_mean(wass_loss, axis=1) + mean_loss + covar_loss
 
         self.curr_step.assign_add(tf.ones_like(self.curr_step))
         return loss
