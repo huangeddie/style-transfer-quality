@@ -23,7 +23,7 @@ class SecondMomentLoss(tf.keras.losses.Loss):
 
         return (mu1 - mu2) ** 2 + (var1 - var2) ** 2
 
-class CoVarLoss(tf.keras.losses.Loss):
+class CovarLoss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
         feats1, feats2 = reshape_to_feats(y_true, y_pred)
 
@@ -93,5 +93,5 @@ class CoWassLoss(tf.keras.losses.Loss):
         return tf.reduce_mean(wass_loss, axis=1) + tf.reduce_mean(covar_loss, axis=[1, 2])
 
 
-loss_dict = {'m1': FirstMomentLoss(), 'm2': SecondMomentLoss(), 'covar':CoVarLoss(), 'gram': GramianLoss(),
+loss_dict = {'m1': FirstMomentLoss(), 'm2': SecondMomentLoss(), 'covar':CovarLoss(), 'gram': GramianLoss(),
              'm3': ThirdMomentLoss(), 'wass': WassLoss(), 'cowass': CoWassLoss()}
