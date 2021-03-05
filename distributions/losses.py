@@ -1,6 +1,7 @@
 import tensorflow as tf
+import tensorflow_probability as tfp
 
-from distributions import compute_wass_dist
+from distributions import compute_wass_dist, reshape_to_feats
 
 
 class FirstMomentLoss(tf.keras.losses.Loss):
@@ -57,5 +58,20 @@ class WassLoss(tf.keras.losses.Loss):
         return wass_dist
 
 
+class CoWassLoss(tf.keras.losses.Loss):
+    def call(self, y_true, y_pred):
+        wass_loss = compute_wass_dist(y_true, y_pred, p=2)
+
+        feats1, feats2 = reshape_to_feats(y_true, y_pred)
+        covar1 = tfp.stats.covariance(feats1, sample_axis=1)
+        covar2 = tfp.stats.covariance(feats2, sample_axis=1)
+        covar_loss = (covar1 - covar2) ** 2
+
+        tf.assert_rank(wass_loss, 2)
+        tf.assert_rank(covar_loss, 3)
+
+        return tf.reduce_mean(wass_loss, axis=1) + tf.reduce_mean(covar_loss, axis=[1, 2])
+
+
 loss_dict = {'m1': FirstMomentLoss(), 'm2': SecondMomentLoss(), 'gram': GramianLoss(), 'm3': ThirdMomentLoss(),
-             'wass': WassLoss()}
+             'wass': WassLoss(), 'cowass': CoWassLoss()}

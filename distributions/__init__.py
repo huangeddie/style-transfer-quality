@@ -13,3 +13,11 @@ def compute_wass_dist(y_pred, y_true, p=1):
         assert p == 2
         wass_dist = tf.reduce_mean(tf.square(y - x), axis=1)
     return wass_dist
+
+
+def reshape_to_feats(y_true, y_pred):
+    y_shape = tf.shape(y_true)
+    b, h, w, c = [y_shape[i] for i in range(4)]
+    feats1 = tf.reshape(y_true, [b, h * w, c])
+    feats2 = tf.reshape(y_pred, [b, h * w, c])
+    return feats1, feats2
