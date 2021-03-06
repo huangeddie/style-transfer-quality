@@ -9,6 +9,7 @@ from distributions import losses, metrics
 FLAGS = flags.FLAGS
 
 flags.DEFINE_integer('train_steps', 100, 'train steps')
+flags.DEFINE_integer('cowass_warmup', 0, 'warmup steps for the CoWass loss')
 flags.DEFINE_integer('verbose', 0, 'verbosity')
 flags.DEFINE_bool('cosine_decay', False, 'cosine decay')
 
@@ -28,7 +29,7 @@ def compile_sc_model(strategy, sc_model, loss_key, with_metrics):
         for loss_list in loss_dict.values():
             for loss in loss_list:
                 if isinstance(loss, losses.CoWassLoss):
-                    loss.warmup_steps.assign(FLAGS.train_steps)
+                    loss.warmup_steps.assign(FLAGS.cowass_warmup)
         if FLAGS.content_image is not None:
             loss_dict['content'] = [tf.keras.losses.MeanSquaredError() for _ in sc_model.feat_model.output['content']]
 

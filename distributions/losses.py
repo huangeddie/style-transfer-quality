@@ -69,6 +69,9 @@ class CoWassLoss(tf.keras.losses.Loss):
         self.curr_step = tf.Variable(0, trainable=False, dtype=tf.float32)
 
     def get_alpha(self):
+        if self.warmup_steps <= 0:
+            return tf.ones_like(self.curr_step)
+
         alpha = self.curr_step / self.warmup_steps
         alpha = tf.minimum(alpha, tf.ones_like(alpha))
         return alpha
