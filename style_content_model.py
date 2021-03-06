@@ -5,6 +5,8 @@ from sklearn import decomposition
 
 FLAGS = flags.FLAGS
 
+flags.DEFINE_enum('start_image', 'rand', ['rand', 'black'], 'image size')
+
 flags.DEFINE_enum('feat_model', 'vgg19', ['vgg19', 'nasnetlarge', 'fast'],
                   'whether or not to cache the features when performing style transfer')
 flags.DEFINE_bool('batch_norm', False, 'batch norm based on the style & content features')
@@ -58,8 +60,13 @@ class SCModel(tf.keras.Model):
         self.feat_model = feat_model
 
     def build(self, input_shape):
-        self.gen_image = self.add_weight('gen_image', input_shape[0],
-                                         initializer=tf.keras.initializers.RandomUniform(minval=0, maxval=255))
+        if FLAGS.start_image == 'rand':
+            initializer = tf.keras.initializers.RandomUniform(minval=0, maxval=255)
+        else:
+            assert FLAGS.start_image == 'black'
+            initializer = tf.keras.initializers.Zeros()
+        logging.info(f'image initializer: {initializer}')
+        self.gen_image = self.add_weight('gen_image', input_shape[0], initializer=initializer)
 
     def reinit_gen_image(self):
         self.gen_image.assign(tf.random.uniform(self.gen_image.shape, maxval=255, dtype=self.gen_image.dtype))
