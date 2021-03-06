@@ -19,20 +19,16 @@ def compute_covar_loss(y_true, y_pred):
 
 class FirstMomentLoss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
-        feats1, feats2 = y_true, y_pred
-
-        mu1 = tf.reduce_mean(feats1, axis=[1, 2], keepdims=True)
-        mu2 = tf.reduce_mean(feats2, axis=[1, 2], keepdims=True)
+        mu1 = tf.reduce_mean(y_true, axis=[1, 2], keepdims=True)
+        mu2 = tf.reduce_mean(y_pred, axis=[1, 2], keepdims=True)
 
         return (mu1 - mu2) ** 2
 
 
 class SecondMomentLoss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
-        feats1, feats2 = y_true, y_pred
-
-        mu1, var1 = tf.nn.moments(feats1, axes=[1, 2], keepdims=True)
-        mu2, var2 = tf.nn.moments(feats2, axes=[1, 2], keepdims=True)
+        mu1, var1 = tf.nn.moments(y_true, axes=[1, 2], keepdims=True)
+        mu2, var2 = tf.nn.moments(y_pred, axes=[1, 2], keepdims=True)
 
         return (mu1 - mu2) ** 2 + (var1 - var2) ** 2
 
@@ -49,13 +45,11 @@ class GramianLoss(tf.keras.losses.Loss):
 
 class ThirdMomentLoss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
-        feats1, feats2 = y_true, y_pred
+        mu1, var1 = tf.nn.moments(y_true, axes=[1, 2], keepdims=True)
+        mu2, var2 = tf.nn.moments(y_pred, axes=[1, 2], keepdims=True)
 
-        mu1, var1 = tf.nn.moments(feats1, axes=[1, 2], keepdims=True)
-        mu2, var2 = tf.nn.moments(feats2, axes=[1, 2], keepdims=True)
-
-        z1 = (feats1 - mu1) * tf.math.rsqrt(var1 + 1e-3)
-        z2 = (feats2 - mu2) * tf.math.rsqrt(var2 + 1e-3)
+        z1 = (y_true - mu1) * tf.math.rsqrt(var1 + 1e-3)
+        z2 = (y_pred - mu2) * tf.math.rsqrt(var2 + 1e-3)
 
         skew1 = tf.reduce_mean(z1 ** 3, axis=[1, 2], keepdims=True)
         skew2 = tf.reduce_mean(z2 ** 3, axis=[1, 2], keepdims=True)

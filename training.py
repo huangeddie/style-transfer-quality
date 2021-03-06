@@ -41,7 +41,7 @@ def compile_sc_model(strategy, sc_model, loss_key, with_metrics):
             metric_dict = {'style': [
                 [metrics.WassDist(), metrics.MeanLoss(), metrics.VarLoss(), metrics.GramLoss(), metrics.SkewLoss()]
                 for _ in sc_model.feat_model.output['style']],
-                           'content': [[] for _ in sc_model.feat_model.output['content']]}
+                'content': [[] for _ in sc_model.feat_model.output['content']]}
         else:
             metric_dict = None
         sc_model.compile(tf.keras.optimizers.Adam(lr_schedule, FLAGS.beta1, FLAGS.beta2, FLAGS.epsilon),
