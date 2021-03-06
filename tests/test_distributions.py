@@ -4,6 +4,7 @@ from absl.testing import absltest
 from scipy import stats
 
 from distributions import compute_wass_dist, compute_raw_m2_loss
+from distributions.losses import compute_covar_loss
 
 FLAGS = flags.FLAGS
 
@@ -38,6 +39,12 @@ class TestDistributions(absltest.TestCase):
         y = tf.random.normal([2, 32, 32, 8])
         raw_m2_loss = compute_raw_m2_loss(x, y)
         tf.debugging.assert_shapes([(raw_m2_loss, (2, 8))])
+
+    def test_covar_loss_shape(self):
+        x = tf.random.normal([2, 32, 32, 8])
+        y = tf.random.normal([2, 32, 32, 8])
+        covar_loss = compute_covar_loss(x, y)
+        tf.debugging.assert_shapes([(covar_loss, (2, 8))])
 
 
 if __name__ == '__main__':
