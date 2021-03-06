@@ -12,7 +12,7 @@ class MeanLoss(tf.keras.metrics.Metric):
         mu1 = tf.reduce_mean(y_true, axis=[1, 2], keepdims=True)
         mu2 = tf.reduce_mean(y_pred, axis=[1, 2], keepdims=True)
 
-        mean_loss = (mu1 - mu2) ** 2
+        mean_loss = tf.reduce_mean((mu1 - mu2) ** 2, axis=1)
 
         if sample_weight is not None:
             sample_weight = tf.cast(sample_weight, "float32")
@@ -37,7 +37,7 @@ class VarLoss(tf.keras.metrics.Metric):
         var1 = tf.math.reduce_variance(y_true, axis=[1, 2], keepdims=True)
         var2 = tf.math.reduce_variance(y_pred, axis=[1, 2], keepdims=True)
 
-        var_loss = (var1 - var2) ** 2
+        var_loss = tf.reduce_mean((var1 - var2) ** 2, axis=1)
 
         if sample_weight is not None:
             sample_weight = tf.cast(sample_weight, "float32")
@@ -66,6 +66,7 @@ class CovarLoss(tf.keras.metrics.Metric):
         centered_y2 = y_pred - mu2
 
         covar_loss = compute_raw_m2_loss(centered_y1, centered_y2)
+        covar_loss = tf.reduce_mean(covar_loss, axis=1)
 
         if sample_weight is not None:
             sample_weight = tf.cast(sample_weight, "float32")
@@ -88,6 +89,7 @@ class GramLoss(tf.keras.metrics.Metric):
 
     def update_state(self, y_true, y_pred, sample_weight=None):
         gram_loss = compute_raw_m2_loss(y_true, y_pred)
+        gram_loss = tf.reduce_mean(gram_loss, axis=1)
 
         if sample_weight is not None:
             sample_weight = tf.cast(sample_weight, "float32")
@@ -118,7 +120,7 @@ class SkewLoss(tf.keras.metrics.Metric):
         skew1 = tf.reduce_mean(z1 ** 3, axis=[1, 2], keepdims=True)
         skew2 = tf.reduce_mean(z2 ** 3, axis=[1, 2], keepdims=True)
 
-        skew_loss = (skew1 - skew2) ** 2
+        skew_loss = tf.reduce_mean((skew1 - skew2) ** 2, axis=1)
 
         if sample_weight is not None:
             sample_weight = tf.cast(sample_weight, "float32")
@@ -141,6 +143,11 @@ class WassDist(tf.keras.metrics.Metric):
 
     def update_state(self, y_true, y_pred, sample_weight=None):
         wass_dist = compute_wass_dist(y_pred, y_true)
+        wass_dist = tf.reduce_mean(wass_dist, axis=1)
+
+        if sample_weight is not None:
+            sample_weight = tf.cast(sample_weight, "float32")
+            wass_dist = tf.multiply(wass_dist, sample_weight)
 
         self.wass_dist.assign_add(tf.reduce_mean(wass_dist))
 
