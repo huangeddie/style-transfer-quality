@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-from distributions import compute_wass_dist
+from distributions import compute_wass_dist, compute_raw_m2_loss
 
 
 class MeanLoss(tf.keras.metrics.Metric):
@@ -9,10 +9,8 @@ class MeanLoss(tf.keras.metrics.Metric):
         self.mean_loss = self.add_weight(name="mean_loss", initializer="zeros")
 
     def update_state(self, y_true, y_pred, sample_weight=None):
-        feats1, feats2 = y_true, y_pred
-
-        mu1 = tf.reduce_mean(feats1, axis=[1, 2], keepdims=True)
-        mu2 = tf.reduce_mean(feats2, axis=[1, 2], keepdims=True)
+        mu1 = tf.reduce_mean(y_true, axis=[1, 2], keepdims=True)
+        mu2 = tf.reduce_mean(y_pred, axis=[1, 2], keepdims=True)
 
         mean_loss = (mu1 - mu2) ** 2
 
@@ -36,10 +34,8 @@ class VarLoss(tf.keras.metrics.Metric):
         self.var_loss = self.add_weight(name="var_loss", initializer="zeros")
 
     def update_state(self, y_true, y_pred, sample_weight=None):
-        feats1, feats2 = y_true, y_pred
-
-        var1 = tf.math.reduce_variance(feats1, axis=[1, 2], keepdims=True)
-        var2 = tf.math.reduce_variance(feats2, axis=[1, 2], keepdims=True)
+        var1 = tf.math.reduce_variance(y_true, axis=[1, 2], keepdims=True)
+        var2 = tf.math.reduce_variance(y_pred, axis=[1, 2], keepdims=True)
 
         var_loss = (var1 - var2) ** 2
 
@@ -57,21 +53,41 @@ class VarLoss(tf.keras.metrics.Metric):
         self.var_loss.assign(0.0)
 
 
+class CovarLoss(tf.keras.metrics.Metric):
+    def __init__(self, name="covar_loss", **kwargs):
+        super().__init__(name=name, **kwargs)
+        self.covar_loss = self.add_weight(name="covar_loss", initializer="zeros")
+
+    def update_state(self, y_true, y_pred, sample_weight=None):
+        mu1 = tf.reduce_mean(y_true, axis=[1, 2], keepdims=True)
+        mu2 = tf.reduce_mean(y_pred, axis=[1, 2], keepdims=True)
+
+        centered_y1 = y_true - mu1
+        centered_y2 = y_pred - mu2
+
+        covar_loss = compute_raw_m2_loss(centered_y1, centered_y2)
+
+        if sample_weight is not None:
+            sample_weight = tf.cast(sample_weight, "float32")
+            covar_loss = tf.multiply(covar_loss, sample_weight)
+
+        self.covar_loss.assign_add(tf.reduce_mean(covar_loss))
+
+    def result(self):
+        return self.covar_loss
+
+    def reset_states(self):
+        # The state of the metric will be reset at the start of each epoch.
+        self.covar_loss.assign(0.0)
+
+
 class GramLoss(tf.keras.metrics.Metric):
     def __init__(self, name="gram_loss", **kwargs):
         super().__init__(name=name, **kwargs)
         self.gram_loss = self.add_weight(name="gram_loss", initializer="zeros")
 
     def update_state(self, y_true, y_pred, sample_weight=None):
-        feats1, feats2 = y_true, y_pred
-        tf.debugging.assert_rank(y_true, 4)
-        imshape = tf.shape(y_true)
-        num_locs = tf.cast(imshape[1] * imshape[2], y_true.dtype)
-
-        gram1 = tf.einsum('bhwc,bhwd->bcd', feats1, feats1) / num_locs
-        gram2 = tf.einsum('bhwc,bhwd->bcd', feats2, feats2) / num_locs
-
-        gram_loss = (gram1 - gram2) ** 2
+        gram_loss = compute_raw_m2_loss(y_true, y_pred)
 
         if sample_weight is not None:
             sample_weight = tf.cast(sample_weight, "float32")
@@ -93,13 +109,11 @@ class SkewLoss(tf.keras.metrics.Metric):
         self.skew_loss = self.add_weight(name="skew_loss", initializer="zeros")
 
     def update_state(self, y_true, y_pred, sample_weight=None):
-        feats1, feats2 = y_true, y_pred
+        mu1, var1 = tf.nn.moments(y_true, axes=[1, 2], keepdims=True)
+        mu2, var2 = tf.nn.moments(y_pred, axes=[1, 2], keepdims=True)
 
-        mu1, var1 = tf.nn.moments(feats1, axes=[1, 2], keepdims=True)
-        mu2, var2 = tf.nn.moments(feats2, axes=[1, 2], keepdims=True)
-
-        z1 = (feats1 - mu1) * tf.math.rsqrt(var1 + 1e-3)
-        z2 = (feats2 - mu2) * tf.math.rsqrt(var2 + 1e-3)
+        z1 = (y_true - mu1) * tf.math.rsqrt(var1 + 1e-3)
+        z2 = (y_pred - mu2) * tf.math.rsqrt(var2 + 1e-3)
 
         skew1 = tf.reduce_mean(z1 ** 3, axis=[1, 2], keepdims=True)
         skew2 = tf.reduce_mean(z2 ** 3, axis=[1, 2], keepdims=True)

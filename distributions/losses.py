@@ -1,10 +1,20 @@
 import tensorflow as tf
-import tensorflow_probability as tfp
 from absl import flags
 
-from distributions import compute_wass_dist, reshape_to_feats
+from distributions import compute_wass_dist, compute_raw_m2_loss
 
 FLAGS = flags.FLAGS
+
+
+def compute_covar_loss(y_true, y_pred):
+    mu1 = tf.reduce_mean(y_true, axis=[1, 2], keepdims=True)
+    mu2 = tf.reduce_mean(y_pred, axis=[1, 2], keepdims=True)
+    mean_loss = tf.squeeze((mu1 - mu2) ** 2, axis=1)
+    centered_y1 = y_true - mu1
+    centered_y2 = y_pred - mu2
+    covar_loss = compute_raw_m2_loss(centered_y1, centered_y2)
+    co_m2_loss = mean_loss + covar_loss
+    return co_m2_loss
 
 
 class FirstMomentLoss(tf.keras.losses.Loss):
@@ -29,35 +39,12 @@ class SecondMomentLoss(tf.keras.losses.Loss):
 
 class CovarLoss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
-        feats1, feats2 = reshape_to_feats(y_true, y_pred)
-
-        mu1 = tf.reduce_mean(feats1, axis=1, keepdims=True)
-        mu2 = tf.reduce_mean(feats2, axis=1, keepdims=True)
-
-        mean_loss = tf.reduce_mean((mu1 - mu2) ** 2, axis=1)
-
-        centered_feats1 = feats1 - mu1
-        centered_feats2 = feats2 - mu2
-
-        n = tf.cast(tf.shape(centered_feats1)[1], tf.float32)
-        covar1 = tf.einsum('bnc,bnd->bcd', centered_feats1, centered_feats1) / n
-        covar2 = tf.einsum('bnc,bnd->bcd', centered_feats2, centered_feats2) / n
-
-        covar_loss = tf.reduce_mean((covar1 - covar2) ** 2, axis=[1, 2])
-
-        return mean_loss + covar_loss
+        return compute_covar_loss(y_true, y_pred)
 
 
 class GramianLoss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
-        tf.debugging.assert_rank(y_true, 4)
-        imshape = tf.shape(y_true)
-        num_locs = tf.cast(imshape[1] * imshape[2], y_true.dtype)
-
-        gram_true = tf.linalg.einsum('bijc,bijd->bcd', y_true, y_true) / num_locs
-        gram_pred = tf.linalg.einsum('bijc,bijd->bcd', y_pred, y_pred) / num_locs
-
-        return (gram_true - gram_pred) ** 2
+        return compute_raw_m2_loss(y_true, y_pred)
 
 
 class ThirdMomentLoss(tf.keras.losses.Loss):
@@ -78,8 +65,7 @@ class ThirdMomentLoss(tf.keras.losses.Loss):
 
 class WassLoss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
-        wass_dist = compute_wass_dist(y_true, y_pred, p=2)
-        return wass_dist
+        return compute_wass_dist(y_true, y_pred, p=2)
 
 
 class CoWassLoss(tf.keras.losses.Loss):
@@ -91,22 +77,14 @@ class CoWassLoss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
         wass_loss = compute_wass_dist(y_true, y_pred, p=2)
 
-        feats1, feats2 = reshape_to_feats(y_true, y_pred)
-
-        mu1 = tf.reduce_mean(feats1, axis=1, keepdims=True)
-        mu2 = tf.reduce_mean(feats2, axis=1, keepdims=True)
-
-        mean_loss = tf.reduce_mean((mu1 - mu2) ** 2, axis=1)
-
-        covar1 = tfp.stats.covariance(feats1, sample_axis=1)
-        covar2 = tfp.stats.covariance(feats2, sample_axis=1)
-        covar_loss = tf.reduce_mean((covar1 - covar2) ** 2, axis=[1, 2])
+        covar_loss = compute_covar_loss(y_true, y_pred)
 
         tf.assert_rank(wass_loss, 2)
+        tf.assert_rank(covar_loss, 2)
 
         alpha = self.curr_step / self.total_steps
         alpha = tf.minimum(alpha, tf.ones_like(alpha))
-        loss = alpha * tf.reduce_mean(wass_loss, axis=1) + mean_loss + covar_loss
+        loss = alpha * tf.reduce_mean(wass_loss, axis=1) + covar_loss
 
         self.curr_step.assign_add(tf.ones_like(self.curr_step))
         return loss

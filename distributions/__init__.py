@@ -21,3 +21,12 @@ def reshape_to_feats(y_true, y_pred):
     feats1 = tf.reshape(y_true, [b, h * w, c])
     feats2 = tf.reshape(y_pred, [b, h * w, c])
     return feats1, feats2
+
+
+def compute_raw_m2_loss(x, y):
+    shape = tf.shape(x)
+    num_locs = tf.cast(shape[1] * shape[2], x.dtype)
+    covar1 = tf.einsum('bhwc,bhwd->bcd', x, x) / num_locs
+    covar2 = tf.einsum('bhwc,bhwd->bcd', y, y) / num_locs
+    covar_loss = tf.reduce_mean((covar1 - covar2) ** 2, axis=[1, 2])
+    return covar_loss
