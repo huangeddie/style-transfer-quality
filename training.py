@@ -25,9 +25,10 @@ def train(sc_model, style_image, content_image, feats_dict, callbacks):
 def compile_sc_model(strategy, sc_model, loss_key, with_metrics):
     with strategy.scope():
         loss_dict = {'style': [losses.loss_dict[loss_key] for _ in sc_model.feat_model.output['style']]}
-        for loss in loss_dict.values():
-            if isinstance(loss, losses.CoWassLoss):
-                loss.total_steps.assign(FLAGS.train_steps)
+        for loss_list in loss_dict.values():
+            for loss in loss_list:
+                if isinstance(loss, losses.CoWassLoss):
+                    loss.warmup_steps.assign(FLAGS.train_steps)
         if FLAGS.content_image is not None:
             loss_dict['content'] = [tf.keras.losses.MeanSquaredError() for _ in sc_model.feat_model.output['content']]
 

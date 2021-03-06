@@ -65,16 +65,20 @@ class WassLoss(tf.keras.losses.Loss):
 class CoWassLoss(tf.keras.losses.Loss):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.total_steps = tf.Variable(5000, trainable=False, dtype=tf.float32)
+        self.warmup_steps = tf.Variable(0, trainable=False, dtype=tf.float32)
         self.curr_step = tf.Variable(0, trainable=False, dtype=tf.float32)
+
+    def get_alpha(self):
+        alpha = self.curr_step / self.warmup_steps
+        alpha = tf.minimum(alpha, tf.ones_like(alpha))
+        return alpha
 
     def call(self, y_true, y_pred):
         wass_loss = compute_wass_dist(y_true, y_pred, p=2)
         covar_loss = compute_covar_loss(y_true, y_pred)
 
-        alpha = self.curr_step / self.total_steps
-        alpha = tf.minimum(alpha, tf.ones_like(alpha))
-        loss = alpha * tf.reduce_mean(wass_loss, axis=1) + covar_loss
+        alpha = self.get_alpha()
+        loss = alpha * wass_loss + covar_loss
 
         self.curr_step.assign_add(tf.ones_like(self.curr_step))
         return loss
