@@ -48,6 +48,27 @@ class TestModel(absltest.TestCase):
         foo.trainable = True
         self.assertEqual(len(foo.trainable_weights), 0)
 
+    def test_standardize(self):
+        foo = scm.Standardize()
+
+        x = tf.random.uniform([8, 32, 32, 3], maxval=255, dtype=tf.float32)
+        y = foo(x)
+        y_mean = tf.math.reduce_mean(y, axis=[0, 1, 2])
+        y_var = tf.math.reduce_variance(y, axis=[0, 1, 2])
+        tf.debugging.assert_near(y_mean, tf.zeros_like(y_mean), atol=1e-5, message='mean not zero')
+        tf.debugging.assert_near(y_var, tf.ones_like(y_var), rtol=1e-5, message='variance not one')
+
+        # Run the layer through a different distribution to make sure it doesn't affect the configured mean and variance
+        x2 = tf.random.uniform([8, 32, 32, 3], minval=-255, maxval=-128, dtype=tf.float32)
+        foo(x2)
+
+        y = foo(x)
+        y_mean = tf.math.reduce_mean(y, axis=[0, 1, 2])
+        y_var = tf.math.reduce_variance(y, axis=[0, 1, 2])
+        tf.debugging.assert_near(y_mean, tf.zeros_like(y_mean), atol=1e-5, message='mean not zero')
+        tf.debugging.assert_near(y_var, tf.ones_like(y_var), rtol=1e-5, message='variance not one')
+
+
 
 if __name__ == '__main__':
     absltest.main()

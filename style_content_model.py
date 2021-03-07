@@ -33,17 +33,22 @@ class Standardize(tf.keras.layers.Layer):
     def build(self, input_shape):
         feat_dim = input_shape[-1]
         self.mean = self.add_weight('mean', [1, 1, 1, feat_dim], trainable=False, initializer='zeros')
-        self.variance = self.add_weight('variance', [feat_dim, self.out_dim], trainable=False, initializer='ones')
+        self.variance = self.add_weight('variance', [1, 1, 1, feat_dim], trainable=False, initializer='ones')
         self.configured = self.add_weight('configured', [], trainable=False, dtype=tf.bool, initializer='zeros')
 
     def configure(self, feats):
-        self.mean.assign(tf.math.reduce_mean(feats, axis=[0, 1, 2], keepdims=True))
-        self.variance.assign(tf.math.reduce_variance(feats, axis=[0, 1, 2], keepdims=True))
-        tf.print('configured standardization')
+        # Precision errors with float32
+        feats = tf.cast(feats, tf.float64)
+
+        self.mean.assign(tf.cast(tf.reduce_mean(feats, axis=[0, 1, 2], keepdims=True), tf.float32))
+        self.variance.assign(tf.cast(tf.math.reduce_variance(feats, axis=[0, 1, 2], keepdims=True), tf.float32))
+
+        tf.print(f'configured standardization: {self.mean} mean, {self.variance} variance')
 
     def call(self, inputs, **kwargs):
-        if self.configured == 0:
+        if self.configured == tf.zeros_like(self.configured):
             self.configure(inputs)
+            self.configured.assign(tf.ones_like(self.configured))
         return (inputs - self.mean) * tf.math.rsqrt(self.variance)
 
 
@@ -59,12 +64,16 @@ class PCA(tf.keras.layers.Layer):
         self.projection = self.add_weight('projection', [feat_dim, self.out_dim], trainable=False)
 
     def configure(self, feats):
+        # Precision errors with float32
+        feats = tf.cast(feats, tf.float64)
+        self.mean.assign(tf.cast(tf.reduce_mean(feats, axis=[0, 1, 2], keepdims=True), tf.float32))
+
         pca = decomposition.PCA(n_components=self.out_dim, whiten=FLAGS.whiten)
         feats_shape = tf.shape(feats)
         n_samples, feat_dim = tf.reduce_prod(feats_shape[:-1]), feats_shape[-1]
-        self.mean.assign(tf.reduce_mean(feats, axis=[0, 1, 2], keepdims=True))
 
         pca.fit(tf.reshape(feats, [n_samples, feat_dim]))
+        tf.debugging.assert_equal(tf.squeeze(self.mean), tf.constant(pca.mean_, dtype=tf.float32))
         self.projection.assign(tf.constant(pca.components_.T, dtype=self.projection.dtype))
 
     def call(self, inputs, **kwargs):
@@ -84,10 +93,13 @@ class FastICA(tf.keras.layers.Layer):
         self.projection = self.add_weight('projection', [feat_dim, self.out_dim], trainable=False)
 
     def configure(self, feats):
+        # Precision errors with float32
+        feats = tf.cast(feats, tf.float64)
+        self.mean.assign(tf.cast(tf.reduce_mean(feats, axis=[0, 1, 2], keepdims=True), tf.float32))
+
         ica = decomposition.FastICA(n_components=self.out_dim)
         feats_shape = tf.shape(feats)
         n_samples, feat_dim = tf.reduce_prod(feats_shape[:-1]), feats_shape[-1]
-        self.mean.assign(tf.reduce_mean(feats, axis=[0, 1, 2], keepdims=True))
 
         ica.fit(tf.reshape(feats, [n_samples, feat_dim]))
         tf.debugging.assert_equal(tf.squeeze(self.mean), tf.constant(ica.mean_, dtype=tf.float32))
@@ -110,7 +122,7 @@ class SCModel(tf.keras.Model):
         else:
             assert FLAGS.start_image == 'black'
             initializer = tf.keras.initializers.Zeros()
-        logging.info(f'image initializer: {initializer}')
+        logging.info(f'image initializer: {initializer.__class__.__name__}')
         self.gen_image = self.add_weight('gen_image', input_shape[0], initializer=initializer)
 
     def reinit_gen_image(self):
@@ -224,12 +236,15 @@ def make_feat_model(input_shape):
 def configure_feat_model(sc_model, style_image, content_image):
     feat_model = sc_model.feat_model
 
-    # Build the gen image
-    sc_model((style_image, content_image))
-
     # Configure the standardize layers if any
+    # Standardize layers before building the generated image
+    # or else the standardize layers will be configured on the gen image
     logging.info('configuring standardize layers')
     feats_dict = feat_model((style_image, content_image))
+
+    # Build the gen image
+    logging.info('building gen image')
+    sc_model((style_image, content_image))
 
     # Add and configure the PCA layers if requested
     if (FLAGS.pca is not None and FLAGS.pca > 0) or (FLAGS.ica is not None and FLAGS.ica > 0):
