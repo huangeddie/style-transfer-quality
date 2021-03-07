@@ -11,7 +11,8 @@ flags.DEFINE_enum('feat_model', 'vgg19', ['vgg19', 'nasnetlarge', 'fast'],
                   'whether or not to cache the features when performing style transfer')
 flags.DEFINE_bool('batch_norm', False, 'batch norm based on the style & content features')
 flags.DEFINE_integer('pca', None, 'maximum dimension of features enforced with PCA')
-flags.DEFINE_bool('whiten', False, 'whiten the components of PCA')
+flags.DEFINE_integer('ica', None, 'maximum dimension of features enforced with FastICa')
+flags.DEFINE_bool('whiten', False, 'whiten the components of PCA/ICA')
 
 flags.DEFINE_float('lr', 1e-3, 'learning rate')
 flags.DEFINE_float('beta1', 0.9, 'beta1')
@@ -46,6 +47,30 @@ class PCA(tf.keras.layers.Layer):
 
         pca.fit(tf.reshape(feats, [n_samples, feat_dim]))
         self.projection.assign(tf.constant(pca.components_.T, dtype=self.projection.dtype))
+
+    def call(self, inputs, **kwargs):
+        x = inputs - self.mean
+        components = tf.einsum('bhwc,cd->bhwd', x, self.projection)
+        return tf.concat([inputs, components], axis=-1)
+
+class FastICA(tf.keras.layers.Layer):
+    def __init__(self, out_dim, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.out_dim = out_dim
+
+    def build(self, input_shape):
+        feat_dim = input_shape[-1]
+        self.mean = self.add_weight('mean', [1, 1, 1, feat_dim], trainable=False)
+        self.projection = self.add_weight('projection', [feat_dim, self.out_dim], trainable=False)
+
+    def configure(self, feats):
+        ica = decomposition.FastICA(n_components=self.out_dim, whiten=FLAGS.whiten)
+        feats_shape = tf.shape(feats)
+        n_samples, feat_dim = tf.reduce_prod(feats_shape[:-1]), feats_shape[-1]
+        self.mean.assign(tf.reduce_mean(feats, axis=[0, 1, 2], keepdims=True))
+
+        ica.fit(tf.reshape(feats, [n_samples, feat_dim]))
+        self.projection.assign(tf.constant(ica.components_.T, dtype=self.projection.dtype))
 
     def call(self, inputs, **kwargs):
         x = inputs - self.mean
@@ -188,7 +213,8 @@ def configure_feat_model(sc_model, style_image, content_image):
     feat_model.trainable = False
 
     # Add and configure the PCA layers if requested
-    if FLAGS.pca is not None and FLAGS.pca > 0:
+    if (FLAGS.pca is not None and FLAGS.pca > 0) or (FLAGS.ica is not None and FLAGS.ica > 0):
+        ProjClass = PCA if FLAGS.pca is not None else FastICA
         all_new_outputs = []
 
         for key in ['style', 'content']:
@@ -196,13 +222,13 @@ def configure_feat_model(sc_model, style_image, content_image):
             for old_output, feats, in zip(feat_model.output[key], feats_dict[key]):
                 n_samples = old_output.shape[1] * old_output.shape[2]
                 n_features = old_output.shape[-1]
-                pca = PCA(min(FLAGS.pca, n_features, n_samples))
-                new_outputs.append(pca(old_output))
-                pca.configure(feats)
+                proj = ProjClass(min(FLAGS.pca, n_features, n_samples))
+                new_outputs.append(proj(old_output))
+                proj.configure(feats)
             all_new_outputs.append(new_outputs)
 
         new_feat_model = tf.keras.models.Model(feat_model.input,
                                                {'style': all_new_outputs[0], 'content': all_new_outputs[1]})
-        logging.info(f'features projected to {FLAGS.pca} maximum dimensions with PCA')
+        logging.info(f'features projected to {FLAGS.pca or FLAGS.ica} maximum dimensions with {ProjClass.__class__.__name__}')
 
         sc_model.feat_model = new_feat_model
