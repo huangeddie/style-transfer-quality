@@ -9,7 +9,7 @@ flags.DEFINE_enum('start_image', 'rand', ['rand', 'black'], 'image size')
 
 flags.DEFINE_enum('feat_model', 'vgg19', ['vgg19', 'nasnetlarge', 'fast'],
                   'whether or not to cache the features when performing style transfer')
-flags.DEFINE_bool('batch_norm', False, 'batch norm based on the style & content features')
+flags.DEFINE_bool('standardize', False, 'standardize outputs based on the style & content features')
 flags.DEFINE_integer('pca', None, 'maximum dimension of features enforced with PCA')
 flags.DEFINE_integer('ica', None, 'maximum dimension of features enforced with FastICa')
 flags.DEFINE_bool('whiten', False, 'whiten the components of PCA/ICA')
@@ -27,6 +27,25 @@ class Preprocess(tf.keras.layers.Layer):
 
     def call(self, inputs, **kwargs):
         return self.preprocess(inputs)
+
+
+class Standardize(tf.keras.layers.Layer):
+    def build(self, input_shape):
+        feat_dim = input_shape[-1]
+        self.mean = self.add_weight('mean', [1, 1, 1, feat_dim], trainable=False, initializer='zeros')
+        self.variance = self.add_weight('variance', [feat_dim, self.out_dim], trainable=False, initializer='ones')
+        self.configured = self.add_weight('configured', [], trainable=False, dtype=tf.bool, initializer='zeros')
+
+    def configure(self, feats):
+        self.mean.assign(tf.math.reduce_mean(feats, axis=[0, 1, 2], keepdims=True))
+        self.variance.assign(tf.math.reduce_variance(feats, axis=[0, 1, 2], keepdims=True))
+        tf.print('configured standardization')
+
+    def call(self, inputs, **kwargs):
+        if self.configured == 0:
+            self.configure(inputs)
+        return (inputs - self.mean) * tf.math.rsqrt(self.variance)
+
 
 
 class PCA(tf.keras.layers.Layer):
@@ -53,6 +72,7 @@ class PCA(tf.keras.layers.Layer):
         components = tf.einsum('bhwc,cd->bhwd', x, self.projection)
         return tf.concat([inputs, components], axis=-1)
 
+
 class FastICA(tf.keras.layers.Layer):
     def __init__(self, out_dim, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -70,6 +90,7 @@ class FastICA(tf.keras.layers.Layer):
         self.mean.assign(tf.reduce_mean(feats, axis=[0, 1, 2], keepdims=True))
 
         ica.fit(tf.reshape(feats, [n_samples, feat_dim]))
+        tf.debugging.assert_equal(tf.squeeze(self.mean), tf.constant(ica.mean_, dtype=tf.float32))
         self.projection.assign(tf.constant(ica.components_.T, dtype=self.projection.dtype))
 
     def call(self, inputs, **kwargs):
@@ -187,15 +208,13 @@ def make_feat_model(input_shape):
 
     style_model = tf.keras.Model(style_input, style_output)
     content_model = tf.keras.Model(content_input, content_output)
-    if FLAGS.batch_norm:
-        new_style_outputs = [tf.keras.layers.BatchNormalization(scale=False, center=False, momentum=0)(output) for
-                             output in style_model.outputs]
-        new_content_outputs = [tf.keras.layers.BatchNormalization(scale=False, center=False, momentum=0)(output) for
-                               output in content_model.outputs]
+    if FLAGS.standardize:
+        new_style_outputs = [Standardize()(output) for output in style_model.outputs]
+        new_content_outputs = [Standardize()(output) for output in content_model.outputs]
 
         sc_model = tf.keras.Model([style_model.input, content_model.input],
                                   {'style': new_style_outputs, 'content': new_content_outputs})
-        logging.info('added batch normalization')
+        logging.info('standardizing features')
     else:
         sc_model = tf.keras.Model([style_model.input, content_model.input],
                                   {'style': style_model.outputs, 'content': content_model.outputs})
@@ -208,9 +227,9 @@ def configure_feat_model(sc_model, style_image, content_image):
     # Build the gen image
     sc_model((style_image, content_image))
 
-    # Configure the batch normalization layer if any
-    feats_dict = feat_model((style_image, content_image), training=True)
-    feat_model.trainable = False
+    # Configure the standardize layers if any
+    logging.info('configuring standardize layers')
+    feats_dict = feat_model((style_image, content_image))
 
     # Add and configure the PCA layers if requested
     if (FLAGS.pca is not None and FLAGS.pca > 0) or (FLAGS.ica is not None and FLAGS.ica > 0):
