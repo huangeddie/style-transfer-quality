@@ -59,7 +59,7 @@ class Standardize(tf.keras.layers.Layer):
         if self.configured == tf.zeros_like(self.configured):
             self.configure(inputs)
             self.configured.assign(tf.ones_like(self.configured))
-        return (inputs - self.mean) * tf.math.rsqrt(self.variance)
+        return (inputs - self.mean) * tf.math.rsqrt(self.variance + 1e-5)
 
 
 
