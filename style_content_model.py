@@ -64,7 +64,7 @@ class FastICA(tf.keras.layers.Layer):
         self.projection = self.add_weight('projection', [feat_dim, self.out_dim], trainable=False)
 
     def configure(self, feats):
-        ica = decomposition.FastICA(n_components=self.out_dim, whiten=FLAGS.whiten)
+        ica = decomposition.FastICA(n_components=self.out_dim)
         feats_shape = tf.shape(feats)
         n_samples, feat_dim = tf.reduce_prod(feats_shape[:-1]), feats_shape[-1]
         self.mean.assign(tf.reduce_mean(feats, axis=[0, 1, 2], keepdims=True))
@@ -215,6 +215,7 @@ def configure_feat_model(sc_model, style_image, content_image):
     # Add and configure the PCA layers if requested
     if (FLAGS.pca is not None and FLAGS.pca > 0) or (FLAGS.ica is not None and FLAGS.ica > 0):
         ProjClass = PCA if FLAGS.pca is not None else FastICA
+        proj_dim = FLAGS.pca or FLAGS.ica
         all_new_outputs = []
 
         for key in ['style', 'content']:
@@ -222,13 +223,13 @@ def configure_feat_model(sc_model, style_image, content_image):
             for old_output, feats, in zip(feat_model.output[key], feats_dict[key]):
                 n_samples = old_output.shape[1] * old_output.shape[2]
                 n_features = old_output.shape[-1]
-                proj = ProjClass(min(FLAGS.pca, n_features, n_samples))
+                proj = ProjClass(min(proj_dim, n_features, n_samples))
                 new_outputs.append(proj(old_output))
                 proj.configure(feats)
             all_new_outputs.append(new_outputs)
 
         new_feat_model = tf.keras.models.Model(feat_model.input,
                                                {'style': all_new_outputs[0], 'content': all_new_outputs[1]})
-        logging.info(f'features projected to {FLAGS.pca or FLAGS.ica} maximum dimensions with {ProjClass.__class__.__name__}')
+        logging.info(f'features projected to {proj_dim} maximum dimensions with {ProjClass.__class__.__name__}')
 
         sc_model.feat_model = new_feat_model
