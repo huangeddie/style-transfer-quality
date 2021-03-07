@@ -9,7 +9,10 @@ flags.DEFINE_enum('start_image', 'rand', ['rand', 'black'], 'image size')
 
 flags.DEFINE_enum('feat_model', 'vgg19', ['vgg19', 'nasnetlarge', 'fast'],
                   'whether or not to cache the features when performing style transfer')
-flags.DEFINE_bool('standardize', False, 'standardize outputs based on the style & content features')
+
+flags.DEFINE_bool('shift', False, 'standardize outputs based on the style & content features')
+flags.DEFINE_bool('scale', False, 'standardize outputs based on the style & content features')
+
 flags.DEFINE_integer('pca', None, 'maximum dimension of features enforced with PCA')
 flags.DEFINE_integer('ica', None, 'maximum dimension of features enforced with FastICa')
 flags.DEFINE_bool('whiten', False, 'whiten the components of PCA/ICA')
@@ -30,6 +33,10 @@ class Preprocess(tf.keras.layers.Layer):
 
 
 class Standardize(tf.keras.layers.Layer):
+    def __init__(self, shift=True, scale=True, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.shift, self.scale = shift, scale
+
     def build(self, input_shape):
         feat_dim = input_shape[-1]
         self.mean = self.add_weight('mean', [1, 1, 1, feat_dim], trainable=False, initializer='zeros')
@@ -40,8 +47,11 @@ class Standardize(tf.keras.layers.Layer):
         # Precision errors with float32
         feats = tf.cast(feats, tf.float64)
 
-        self.mean.assign(tf.cast(tf.reduce_mean(feats, axis=[0, 1, 2], keepdims=True), tf.float32))
-        self.variance.assign(tf.cast(tf.math.reduce_variance(feats, axis=[0, 1, 2], keepdims=True), tf.float32))
+        if self.shift:
+            self.mean.assign(tf.cast(tf.reduce_mean(feats, axis=[0, 1, 2], keepdims=True), tf.float32))
+
+        if self.scale:
+            self.variance.assign(tf.cast(tf.math.reduce_variance(feats, axis=[0, 1, 2], keepdims=True), tf.float32))
 
         tf.print(f'configured standardization: {self.mean} mean, {self.variance} variance')
 
@@ -220,9 +230,9 @@ def make_feat_model(input_shape):
 
     style_model = tf.keras.Model(style_input, style_output)
     content_model = tf.keras.Model(content_input, content_output)
-    if FLAGS.standardize:
-        new_style_outputs = [Standardize()(output) for output in style_model.outputs]
-        new_content_outputs = [Standardize()(output) for output in content_model.outputs]
+    if FLAGS.shift or FLAGS.scale:
+        new_style_outputs = [Standardize(FLAGS.shift, FLAGS.scale)(output) for output in style_model.outputs]
+        new_content_outputs = [Standardize(FLAGS.shift, FLAGS.scale)(output) for output in content_model.outputs]
 
         sc_model = tf.keras.Model([style_model.input, content_model.input],
                                   {'style': new_style_outputs, 'content': new_content_outputs})
