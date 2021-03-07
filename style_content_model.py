@@ -53,7 +53,7 @@ class Standardize(tf.keras.layers.Layer):
         if self.scale:
             self.variance.assign(tf.cast(tf.math.reduce_variance(feats, axis=[0, 1, 2], keepdims=True), tf.float32))
 
-        tf.print(f'configured standardization: {self.mean} mean, {self.variance} variance')
+        tf.print(f'configured standardization')
 
     def call(self, inputs, **kwargs):
         if self.configured == tf.zeros_like(self.configured):
