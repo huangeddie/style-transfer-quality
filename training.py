@@ -57,4 +57,3 @@ def compile_sc_model(strategy, sc_model, loss_key, with_metrics):
         # Compile
         sc_model.compile(tf.keras.optimizers.Adam(lr_schedule, FLAGS.beta1, FLAGS.beta2, FLAGS.epsilon),
                          loss=loss_dict, metrics=metric_dict)
-    return sc_model

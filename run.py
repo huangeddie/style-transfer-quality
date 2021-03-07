@@ -58,7 +58,7 @@ def main(argv):
 
         # Reset gen image and recompile
         sc_model.reinit_gen_image()
-        sc_model = compile_sc_model(strategy, sc_model, loss_key, with_metrics=False)
+        compile_sc_model(strategy, sc_model, loss_key, with_metrics=False)
 
         # Style transfer
         logging.info(f'loss function: {loss_key}')
@@ -66,6 +66,7 @@ def main(argv):
         train(sc_model, style_image, content_image, feats_dict, callbacks)
 
         # Sanity evaluation
+        logging.info('evaluating on projected features')
         sc_model.evaluate((style_image, content_image), feats_dict, batch_size=1, return_dict=True)
 
         # Save the images to disk
@@ -80,7 +81,8 @@ def main(argv):
 
         orig_feat_model = sc_model.feat_model
         sc_model.feat_model = raw_feat_model
-        sc_model = compile_sc_model(strategy, sc_model, loss_key, with_metrics=True)
+        compile_sc_model(strategy, sc_model, loss_key, with_metrics=True)
+        logging.info('evaluating on raw features')
         raw_metrics = sc_model.evaluate((style_image, content_image), raw_feats_dict, batch_size=1, return_dict=True)
         raw_metrics = pd.Series(raw_metrics)
         for metric in ['_wass', '_mean', '_var', '_covar', '_gram', '_skew']:
