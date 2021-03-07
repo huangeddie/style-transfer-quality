@@ -10,6 +10,7 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_integer('train_steps', 100, 'train steps')
 flags.DEFINE_integer('cowass_warmup', 0, 'warmup steps for the CoWass loss')
+flags.DEFINE_integer('pcawass_components', None, 'pca components for PCA Wass loss')
 flags.DEFINE_integer('verbose', 0, 'verbosity')
 flags.DEFINE_bool('cosine_decay', False, 'cosine decay')
 
@@ -23,16 +24,17 @@ def train(sc_model, style_image, content_image, feats_dict, callbacks):
     logging.info(f'training took {duration}')
 
 
-def compile_sc_model(strategy, sc_model, loss_key, with_metrics):
+def compile_sc_model(strategy, sc_model, loss_key, feats_dict, with_metrics):
     with strategy.scope():
         # Style loss
         loss_dict = {'style': [losses.loss_dict[loss_key] for _ in sc_model.feat_model.output['style']]}
 
         # Configure the CoWass loss if any
-        for loss_list in loss_dict.values():
-            for loss in loss_list:
-                if isinstance(loss, losses.CoWassLoss):
-                    loss.warmup_steps.assign(FLAGS.cowass_warmup)
+        for loss, feats in zip(loss_dict['style'], feats_dict['style']):
+            if isinstance(loss, losses.CoWassLoss):
+                loss.warmup_steps.assign(FLAGS.cowass_warmup)
+            elif isinstance(loss, losses.PCAWassLoss):
+                loss.configure(feats, FLAGS.pcawass_components)
 
         # Content loss
         if FLAGS.content_image is not None:
