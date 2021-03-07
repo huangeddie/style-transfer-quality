@@ -51,7 +51,8 @@ class PCA(tf.keras.layers.Layer):
 
     def call(self, inputs, **kwargs):
         x = inputs - tf.reshape(self.mean, [1, 1, 1, -1])
-        return tf.einsum('bhwc,cd->bhwd', x, self.projection)
+        components = tf.einsum('bhwc,cd->bhwd', x, self.projection)
+        return tf.concat([inputs, components], axis=-1)
 
 
 class SCModel(tf.keras.Model):
