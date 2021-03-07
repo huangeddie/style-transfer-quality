@@ -42,7 +42,7 @@ class PCA(tf.keras.layers.Layer):
         pca = decomposition.PCA(n_components=self.out_dim, whiten=FLAGS.whiten)
         feats_shape = tf.shape(feats)
         n_samples, feat_dim = tf.reduce_prod(feats_shape[:-1]), feats_shape[-1]
-        self.mean.assign(tf.reduce_mean(feats, axis=[0,1,2], keepdims=True))
+        self.mean.assign(tf.reduce_mean(feats, axis=[0, 1, 2], keepdims=True))
 
         pca.fit(tf.reshape(feats, [n_samples, feat_dim]))
         self.projection.assign(tf.constant(pca.components_.T, dtype=self.projection.dtype))
