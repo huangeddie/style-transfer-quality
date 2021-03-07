@@ -230,6 +230,6 @@ def configure_feat_model(sc_model, style_image, content_image):
 
         new_feat_model = tf.keras.models.Model(feat_model.input,
                                                {'style': all_new_outputs[0], 'content': all_new_outputs[1]})
-        logging.info(f'features projected to {proj_dim} maximum dimensions with {ProjClass.__class__.__name__}')
+        logging.info(f'features projected to {proj_dim} maximum dimensions with {ProjClass.__name__}')
 
         sc_model.feat_model = new_feat_model
