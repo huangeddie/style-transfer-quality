@@ -35,22 +35,20 @@ class PCA(tf.keras.layers.Layer):
 
     def build(self, input_shape):
         feat_dim = input_shape[-1]
-        self.mean = self.add_weight('mean', [1, feat_dim], trainable=False)
+        self.mean = self.add_weight('mean', [1, 1, 1, feat_dim], trainable=False)
         self.projection = self.add_weight('projection', [feat_dim, self.out_dim], trainable=False)
 
     def configure(self, feats):
         pca = decomposition.PCA(n_components=self.out_dim, whiten=FLAGS.whiten)
         feats_shape = tf.shape(feats)
         n_samples, feat_dim = tf.reduce_prod(feats_shape[:-1]), feats_shape[-1]
-        feats = tf.reshape(feats, [-1, feat_dim])
-        mu = tf.constant(tf.reduce_mean(feats, axis=0, keepdims=True), dtype=self.mean.dtype)
-        self.mean.assign(mu)
+        self.mean.assign(tf.reduce_mean(feats, axis=[0,1,2], keepdims=True))
 
-        pca.fit(feats - mu)
+        pca.fit(tf.reshape(feats, [n_samples, feat_dim]))
         self.projection.assign(tf.constant(pca.components_.T, dtype=self.projection.dtype))
 
     def call(self, inputs, **kwargs):
-        x = inputs - tf.reshape(self.mean, [1, 1, 1, -1])
+        x = inputs - self.mean
         components = tf.einsum('bhwc,cd->bhwd', x, self.projection)
         return tf.concat([inputs, components], axis=-1)
 
