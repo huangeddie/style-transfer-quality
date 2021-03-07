@@ -48,7 +48,7 @@ class PCA(tf.keras.layers.Layer):
         self.projection.assign(tf.constant(pca.components_.T, dtype=self.projection.dtype))
 
     def call(self, inputs, **kwargs):
-        x = inputs - self.mean
+        x = inputs - tf.reduce_mean(inputs, axis=[0, 1, 2], keepdims=True)
         components = tf.einsum('bhwc,cd->bhwd', x, self.projection)
         return tf.concat([inputs, components], axis=-1)
 
