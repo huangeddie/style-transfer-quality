@@ -13,8 +13,7 @@ from utils import plot_loss, log_feat_distribution, plot_layer_grams, setup, loa
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_multi_enum('losses', [], ['m1', 'm2', 'covar', 'gram', 'm3', 'wass', 'cowass', 'pcawass'],
-                        'type of loss to use')
+flags.DEFINE_multi_enum('losses', ['m2'], ['m1', 'm2', 'covar', 'gram', 'm3', 'wass', 'cowass'], 'type of loss to use')
 
 
 def main(argv):
@@ -59,7 +58,7 @@ def main(argv):
 
         # Reset gen image and recompile
         sc_model.reinit_gen_image()
-        sc_model = compile_sc_model(strategy, sc_model, loss_key, feats_dict, with_metrics=False)
+        sc_model = compile_sc_model(strategy, sc_model, loss_key, with_metrics=False)
 
         # Style transfer
         logging.info(f'loss function: {loss_key}')
@@ -81,7 +80,7 @@ def main(argv):
 
         orig_feat_model = sc_model.feat_model
         sc_model.feat_model = raw_feat_model
-        sc_model = compile_sc_model(strategy, sc_model, loss_key, feats_dict, with_metrics=True)
+        sc_model = compile_sc_model(strategy, sc_model, loss_key, with_metrics=True)
         raw_metrics = sc_model.evaluate((style_image, content_image), raw_feats_dict, batch_size=1, return_dict=True)
         raw_metrics = pd.Series(raw_metrics)
         for metric in ['wass', 'mean', 'var', 'gram', 'skew']:

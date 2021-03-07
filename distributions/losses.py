@@ -1,6 +1,5 @@
 import tensorflow as tf
 from absl import flags
-from sklearn import decomposition
 
 from distributions import compute_wass_dist, compute_raw_m2_loss
 
@@ -88,28 +87,5 @@ class CoWassLoss(tf.keras.losses.Loss):
         return loss
 
 
-class PCAWassLoss(tf.keras.losses.Loss):
-    def configure(self, feats, n_components):
-        pca = decomposition.PCA(n_components=n_components)
-        feats_shape = tf.shape(feats)
-        n_samples, feat_dim = tf.reduce_prod(feats_shape[:-1]), feats_shape[-1]
-        feats = tf.reshape(feats, [n_samples, feat_dim])
-        self.mean = tf.reshape(tf.reduce_mean(feats, axis=0), [1, 1, 1, feat_dim])
-
-        pca.fit(feats)
-        self.projection = tf.constant(pca.components_.T, dtype=tf.float32)
-
-    def call(self, y_true, y_pred):
-        centered_y1 = y_true - self.mean
-        centered_y2 = y_pred - self.mean
-        co1 = tf.einsum('bhwc,cd->bhwd', centered_y1, self.projection)
-        co2 = tf.einsum('bhwc,cd->bhwd', centered_y2, self.projection)
-
-        concat1 = tf.concat([y_true, co1], axis=-1)
-        concat2 = tf.concat([y_pred, co2], axis=-1)
-
-        return compute_wass_dist(concat1, concat2, p=2)
-
-
 loss_dict = {'m1': FirstMomentLoss(), 'm2': SecondMomentLoss(), 'covar': CovarLoss(), 'gram': GramianLoss(),
-             'm3': ThirdMomentLoss(), 'wass': WassLoss(), 'cowass': CoWassLoss(), 'pcawass': PCAWassLoss()}
+             'm3': ThirdMomentLoss(), 'wass': WassLoss(), 'cowass': CoWassLoss()}
