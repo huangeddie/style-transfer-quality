@@ -142,7 +142,7 @@ class WassDist(tf.keras.metrics.Metric):
         self.wass_dist = self.add_weight(name="wass_dist", initializer="zeros")
 
     def update_state(self, y_true, y_pred, sample_weight=None):
-        wass_dist = compute_wass_dist(y_pred, y_true)
+        wass_dist = compute_wass_dist(y_true, y_pred)
         wass_dist = tf.reduce_mean(wass_dist, axis=1)
 
         if sample_weight is not None:

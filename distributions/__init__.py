@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 
-def compute_wass_dist(y_pred, y_true, p=1):
+def compute_wass_dist(y_true, y_pred, p=1):
     shape = tf.shape(y_true)
     bsz, num_locs, channels = shape[0], shape[1] * shape[2], shape[-1]
     y_true = tf.reshape(y_true, [bsz, num_locs, channels])

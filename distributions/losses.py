@@ -98,10 +98,10 @@ class RandPairWassLoss(tf.keras.losses.Loss):
         co1 = tf.squeeze(tf.einsum('bhwc,bhwd->bhwcd', y_true, rand_comp1), -1)
         co2 = tf.squeeze(tf.einsum('bhwc,bhwd->bhwcd', y_pred, rand_comp2), -1)
 
-        cat_feats1 = tf.concat([y_true, co1], axis=-1)
-        cat_feats2 = tf.concat([y_pred, co2], axis=-1)
+        co_dist = compute_wass_dist(co1, co2, p=2)
+        wass_dist = compute_wass_dist(y_true, y_pred, p=2)
 
-        return compute_wass_dist(cat_feats1, cat_feats2, p=2)
+        return wass_dist + co_dist
 
 
 loss_dict = {'m1': FirstMomentLoss(), 'm2': SecondMomentLoss(), 'covar': CovarLoss(), 'gram': GramianLoss(),
