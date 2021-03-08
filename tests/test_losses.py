@@ -1,8 +1,9 @@
+import tensorflow as tf
 from absl import flags
 from absl.testing import absltest
 
 from distributions.losses import CoWassLoss
-import tensorflow as tf
+
 FLAGS = flags.FLAGS
 
 
@@ -36,6 +37,7 @@ class TestLosses(absltest.TestCase):
         # Initial alpha value should be 0
         alpha = cowass.get_alpha()
         tf.debugging.assert_equal(tf.ones_like(alpha), alpha)
+
 
 if __name__ == '__main__':
     absltest.main()

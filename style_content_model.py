@@ -62,7 +62,6 @@ class Standardize(tf.keras.layers.Layer):
         return (inputs - self.mean) * tf.math.rsqrt(self.variance + 1e-5)
 
 
-
 class PCA(tf.keras.layers.Layer):
     def __init__(self, out_dim, *args, **kwargs):
         super().__init__(*args, **kwargs)

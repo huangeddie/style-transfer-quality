@@ -48,7 +48,8 @@ def compile_sc_model(strategy, sc_model, loss_key, with_metrics):
         # Metrics?
         if with_metrics:
             metric_dict = {'style': [
-                [metrics.WassDist(), metrics.MeanLoss(), metrics.VarLoss(), metrics.CovarLoss(), metrics.SkewLoss(), metrics.GramLoss(), ]
+                [metrics.WassDist(), metrics.MeanLoss(), metrics.VarLoss(), metrics.CovarLoss(), metrics.SkewLoss(),
+                 metrics.GramLoss(), ]
                 for _ in sc_model.feat_model.output['style']],
                 'content': [[] for _ in sc_model.feat_model.output['content']]}
         else:

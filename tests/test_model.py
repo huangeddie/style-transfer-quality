@@ -69,6 +69,5 @@ class TestModel(absltest.TestCase):
         tf.debugging.assert_near(y_var, tf.ones_like(y_var), rtol=1e-5, message='variance not one')
 
 
-
 if __name__ == '__main__':
     absltest.main()
