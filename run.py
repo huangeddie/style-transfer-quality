@@ -7,13 +7,13 @@ from absl import app
 from absl import flags
 from absl import logging
 
-import style_content_model as scm
+import model as scm
 from training import train, compile_sc_model
 from utils import plot_loss, log_feat_distribution, plot_layer_grams, setup, load_sc_images
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_multi_enum('losses', None, ['m1', 'm2', 'covar', 'gram', 'm3', 'wass', 'cowass', 'rpwass'],
+flags.DEFINE_multi_enum('losses', [None], ['m1', 'm2', 'covar', 'gram', 'm3', 'wass', 'cowass', 'rpwass', None],
                         'type of loss to use')
 
 

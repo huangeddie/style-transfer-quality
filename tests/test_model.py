@@ -2,7 +2,8 @@ import tensorflow as tf
 from absl import flags
 from absl.testing import absltest
 
-import style_content_model as scm
+import model.layers
+from model import style_content_model as scm
 
 FLAGS = flags.FLAGS
 
@@ -41,7 +42,7 @@ class TestModel(absltest.TestCase):
             tf.debugging.assert_equal(true_result, einsum_result)
 
     def test_pca_constant(self):
-        foo = tf.keras.Sequential([scm.PCA(2)])
+        foo = tf.keras.Sequential([model.layers.PCA(2)])
         out = foo(tf.random.normal([32, 16, 16, 4]))
         tf.debugging.assert_shapes([(out, [32, 16, 16, 2])])
         self.assertEqual(len(foo.trainable_weights), 0)
@@ -49,7 +50,7 @@ class TestModel(absltest.TestCase):
         self.assertEqual(len(foo.trainable_weights), 0)
 
     def test_standardize(self):
-        foo = scm.Standardize()
+        foo = model.layers.Standardize()
 
         x = tf.random.uniform([8, 32, 32, 3], maxval=255, dtype=tf.float32)
         y = foo(x)
