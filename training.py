@@ -13,6 +13,11 @@ flags.DEFINE_integer('cowass_warmup', 0, 'warmup steps for the CoWass loss')
 flags.DEFINE_integer('verbose', 0, 'verbosity')
 flags.DEFINE_bool('cosine_decay', False, 'cosine decay')
 
+flags.DEFINE_float('lr', 1e-3, 'learning rate')
+flags.DEFINE_float('beta1', 0.9, 'beta1')
+flags.DEFINE_float('beta2', 0.99, 'beta2')
+flags.DEFINE_float('epsilon', 1e-7, 'epsilon')
+
 
 def train(sc_model, style_image, content_image, feats_dict, callbacks):
     start_time = datetime.datetime.now()

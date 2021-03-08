@@ -19,11 +19,6 @@ flags.DEFINE_integer('pca', None, 'maximum dimension of features enforced with P
 flags.DEFINE_integer('ica', None, 'maximum dimension of features enforced with FastICa')
 flags.DEFINE_bool('whiten', False, 'whiten the components of PCA/ICA')
 
-flags.DEFINE_float('lr', 1e-3, 'learning rate')
-flags.DEFINE_float('beta1', 0.9, 'beta1')
-flags.DEFINE_float('beta2', 0.99, 'beta2')
-flags.DEFINE_float('epsilon', 1e-7, 'epsilon')
-
 
 def make_feat_model(input_shape):
     style_input = tf.keras.Input(input_shape, name='style')
@@ -147,9 +142,44 @@ class SCModel(tf.keras.Model):
         logging.info(f'image initializer: {initializer.__class__.__name__}')
         self.gen_image = self.add_weight('gen_image', input_shape[0], initializer=initializer)
 
-    def add_optional_discriminator(self, discriminator):
-        if discriminator is not None:
-            self.discriminator = discriminator
+    def configure(self, style_image, content_image):
+        feat_model = self.feat_model
+
+        # Configure the standardize layers if any
+        # Standardize layers before building the generated image
+        # or else the standardize layers will be configured on the gen image
+        logging.info('configuring standardize layers')
+        feats_dict = feat_model((style_image, content_image))
+
+        # Build the gen image
+        logging.info('building gen image')
+        self((style_image, content_image))
+
+        # Add and configure the PCA layers if requested
+        if (FLAGS.pca is not None and FLAGS.pca > 0) or (FLAGS.ica is not None and FLAGS.ica > 0):
+            ProjClass = PCA if FLAGS.pca is not None else FastICA
+            proj_dim = FLAGS.pca or FLAGS.ica
+            all_new_outputs = []
+
+            for key in ['style', 'content']:
+                new_outputs = []
+                for old_output, feats, in zip(feat_model.output[key], feats_dict[key]):
+                    n_samples = old_output.shape[1] * old_output.shape[2]
+                    n_features = old_output.shape[-1]
+                    proj = ProjClass(min(proj_dim, n_features, n_samples))
+                    new_outputs.append(proj(old_output))
+                    proj.configure(feats)
+                all_new_outputs.append(new_outputs)
+
+            new_feat_model = tf.keras.models.Model(feat_model.input,
+                                                   {'style': all_new_outputs[0], 'content': all_new_outputs[1]})
+            logging.info(f'features projected to {proj_dim} maximum dimensions with {ProjClass.__name__}')
+
+            self.feat_model = new_feat_model
+
+        # Add discriminator if requested
+        if FLAGS.disc_model is not None:
+            self.discriminator = make_discriminator(self.feat_model)
             logging.info('added discriminator')
 
     def reinit_gen_image(self):
@@ -222,38 +252,3 @@ class SCModel(tf.keras.Model):
 
     def get_gen_image(self):
         return tf.constant(tf.cast(self.gen_image, tf.uint8))
-
-    def configure(self, style_image, content_image):
-        feat_model = self.feat_model
-
-        # Configure the standardize layers if any
-        # Standardize layers before building the generated image
-        # or else the standardize layers will be configured on the gen image
-        logging.info('configuring standardize layers')
-        feats_dict = feat_model((style_image, content_image))
-
-        # Build the gen image
-        logging.info('building gen image')
-        self((style_image, content_image))
-
-        # Add and configure the PCA layers if requested
-        if (FLAGS.pca is not None and FLAGS.pca > 0) or (FLAGS.ica is not None and FLAGS.ica > 0):
-            ProjClass = PCA if FLAGS.pca is not None else FastICA
-            proj_dim = FLAGS.pca or FLAGS.ica
-            all_new_outputs = []
-
-            for key in ['style', 'content']:
-                new_outputs = []
-                for old_output, feats, in zip(feat_model.output[key], feats_dict[key]):
-                    n_samples = old_output.shape[1] * old_output.shape[2]
-                    n_features = old_output.shape[-1]
-                    proj = ProjClass(min(proj_dim, n_features, n_samples))
-                    new_outputs.append(proj(old_output))
-                    proj.configure(feats)
-                all_new_outputs.append(new_outputs)
-
-            new_feat_model = tf.keras.models.Model(feat_model.input,
-                                                   {'style': all_new_outputs[0], 'content': all_new_outputs[1]})
-            logging.info(f'features projected to {proj_dim} maximum dimensions with {ProjClass.__name__}')
-
-            self.feat_model = new_feat_model

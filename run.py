@@ -33,9 +33,9 @@ def main(argv):
     with strategy.scope():
         raw_feat_model = scm.make_feat_model(image_shape)
         sc_model = scm.SCModel(raw_feat_model)
+
         # Configure the model to the style and content images
         sc_model.configure(style_image, content_image)
-        sc_model.add_optional_discriminator(scm.make_discriminator(sc_model.feat_model))
 
     # Plot the feature model structure
     tf.keras.utils.plot_model(sc_model.feat_model, './out/feat_model.jpg')
