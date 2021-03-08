@@ -46,7 +46,7 @@ def compile_sc_model(strategy, sc_model, loss_key, with_metrics):
         # Learning rate schedule
         if FLAGS.cosine_decay:
             lr_schedule = tf.keras.optimizers.schedules.CosineDecay(FLAGS.lr, FLAGS.train_steps)
-            logging.info('using cosine decay lr schedule')
+            logging.info(f'using cosine decay lr schedule with lr={FLAGS.lr}, train_steps={FLAGS.train_steps}')
         else:
             lr_schedule = FLAGS.lr
 

@@ -139,7 +139,7 @@ class SCModel(tf.keras.Model):
         else:
             assert FLAGS.start_image == 'black'
             initializer = tf.keras.initializers.Zeros()
-        logging.info(f'image initializer: {initializer.__class__.__name__}')
+        logging.info(f'initialzed gen image with {initializer.__class__.__name__}')
         self.gen_image = self.add_weight('gen_image', input_shape[0], initializer=initializer)
 
     def configure(self, style_image, content_image):
@@ -148,11 +148,10 @@ class SCModel(tf.keras.Model):
         # Configure the standardize layers if any
         # Standardize layers before building the generated image
         # or else the standardize layers will be configured on the gen image
-        logging.info('configuring standardize layers')
+        logging.info(f'configuring standardize layers (shift={FLAGS.shift}, scale={FLAGS.scale})')
         feats_dict = feat_model((style_image, content_image))
 
         # Build the gen image
-        logging.info('building gen image')
         self((style_image, content_image))
 
         # Add and configure the PCA layers if requested
