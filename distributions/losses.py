@@ -105,4 +105,5 @@ class RandPairWassLoss(tf.keras.losses.Loss):
 
 
 loss_dict = {'m1': FirstMomentLoss(), 'm2': SecondMomentLoss(), 'covar': CovarLoss(), 'gram': GramianLoss(),
-             'm3': ThirdMomentLoss(), 'wass': WassLoss(), 'cowass': CoWassLoss(), 'rpwass': RandPairWassLoss()}
+             'm3': ThirdMomentLoss(), 'wass': WassLoss(), 'cowass': CoWassLoss(), 'rpwass': RandPairWassLoss(),
+             None: []}

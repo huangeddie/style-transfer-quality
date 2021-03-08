@@ -1,4 +1,5 @@
 import tensorflow as tf
+import tensorflow_addons as tfa
 from absl import flags
 from absl import logging
 from sklearn import decomposition
@@ -7,8 +8,8 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_enum('start_image', 'rand', ['rand', 'black'], 'image size')
 
-flags.DEFINE_enum('feat_model', 'vgg19', ['vgg19', 'nasnetlarge', 'fast'],
-                  'whether or not to cache the features when performing style transfer')
+flags.DEFINE_enum('feat_model', 'vgg19', ['vgg19', 'nasnetlarge', 'fast'], 'feature model architecture')
+flags.DEFINE_enum('disc_model', None, ['mlp', 'fast'], 'discriminator model architecture')
 
 flags.DEFINE_bool('shift', False, 'standardize outputs based on the style & content features')
 flags.DEFINE_bool('scale', False, 'standardize outputs based on the style & content features')
@@ -122,6 +123,7 @@ class SCModel(tf.keras.Model):
     def __init__(self, feat_model, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.feat_model = feat_model
+        self.bce_loss = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 
     def build(self, input_shape):
         if FLAGS.start_image == 'rand':
@@ -132,6 +134,11 @@ class SCModel(tf.keras.Model):
         logging.info(f'image initializer: {initializer.__class__.__name__}')
         self.gen_image = self.add_weight('gen_image', input_shape[0], initializer=initializer)
 
+    def add_optional_discriminator(self, discriminator):
+        if discriminator is not None:
+            self.discriminator = discriminator
+            logging.info('added discriminator')
+
     def reinit_gen_image(self):
         self.gen_image.assign(tf.random.uniform(self.gen_image.shape, maxval=255, dtype=self.gen_image.dtype))
 
@@ -141,6 +148,28 @@ class SCModel(tf.keras.Model):
     def train_step(self, data):
         images, feats = data
 
+        # Train the discriminator
+        if hasattr(self, 'discriminator'):
+            d_grads, d_weights = self.disc_step(images, feats)
+        else:
+            d_grads, d_weights = [], []
+        assert isinstance(d_grads, list)
+        assert isinstance(d_weights, list)
+
+        # Train the generated image
+        g_grads, g_weights = self.gen_step(images, feats)
+        assert isinstance(g_grads, list)
+        assert isinstance(g_weights, list)
+
+        self.optimizer.apply_gradients(zip(d_grads + g_grads, d_weights + g_weights))
+
+        # Clip to RGB range
+        self.gen_image.assign(tf.clip_by_value(self.gen_image, 0, 255))
+
+        # Return a dict mapping metric names to current value
+        return {m.name: m.result() for m in self.metrics}
+
+    def gen_step(self, images, feats):
         with tf.GradientTape() as tape:
             # Compute generated features
             gen_feats = self(images, training=False)
@@ -149,20 +178,76 @@ class SCModel(tf.keras.Model):
             # (the loss function is configured in `compile()`)
             loss = self.compiled_loss(feats, gen_feats, regularization_losses=self.losses)
 
+            # Add discriminator loss if any
+            if hasattr(self, 'discriminator'):
+                fake_labels = []
+                for feats in gen_feats['style']:
+                    shape = tf.shape(feats)
+                    b, h, w, c = [shape[i] for i in range(4)]
+                    fake_labels.append(tf.ones([b, h, w]))
+                d_logits = self.discriminator(gen_feats['style'])
+                for labels, logits in zip(fake_labels, d_logits):
+                    loss += self.bce_loss(labels, logits)
         # Optimize generated image
         grad = tape.gradient(loss, [self.gen_image])
-        self.optimizer.apply_gradients(zip(grad, [self.gen_image]))
-        # Clip to RGB range
-        self.gen_image.assign(tf.clip_by_value(self.gen_image, 0, 255))
 
         # Update metrics
         self.compiled_metrics.update_state(feats, gen_feats)
+        return grad, [self.gen_image]
 
-        # Return a dict mapping metric names to current value
-        return {m.name: m.result() for m in self.metrics}
+    def disc_step(self, images, feats):
+        gen_feats = self(images, training=False)
+        cat_feats, cat_labels = [], []
+        for r_feats, g_feats in zip(feats['style'], gen_feats['style']):
+            shape = tf.shape(r_feats)
+            b, h, w, c = [shape[i] for i in range(4)]
+            cat_feats.append(tf.concat([r_feats, g_feats], axis=0))
+            cat_labels.append(tf.concat([tf.ones([b, h, w]), tf.zeros([b, h, w])], axis=0))
+        with tf.GradientTape() as tape:
+            d_logits = self.discriminator(cat_feats)
+            d_loss = 0
+            for labels, logits in zip(cat_labels, d_logits):
+                d_loss += self.bce_loss(labels, logits)
+        d_grads = tape.gradient(d_loss, self.discriminator.trainable_weights)
+        return d_grads, self.discriminator.trainable_weights
 
     def get_gen_image(self):
         return tf.constant(tf.cast(self.gen_image, tf.uint8))
+
+    def configure(self, style_image, content_image):
+        feat_model = self.feat_model
+
+        # Configure the standardize layers if any
+        # Standardize layers before building the generated image
+        # or else the standardize layers will be configured on the gen image
+        logging.info('configuring standardize layers')
+        feats_dict = feat_model((style_image, content_image))
+
+        # Build the gen image
+        logging.info('building gen image')
+        self((style_image, content_image))
+
+        # Add and configure the PCA layers if requested
+        if (FLAGS.pca is not None and FLAGS.pca > 0) or (FLAGS.ica is not None and FLAGS.ica > 0):
+            ProjClass = PCA if FLAGS.pca is not None else FastICA
+            proj_dim = FLAGS.pca or FLAGS.ica
+            all_new_outputs = []
+
+            for key in ['style', 'content']:
+                new_outputs = []
+                for old_output, feats, in zip(feat_model.output[key], feats_dict[key]):
+                    n_samples = old_output.shape[1] * old_output.shape[2]
+                    n_features = old_output.shape[-1]
+                    proj = ProjClass(min(proj_dim, n_features, n_samples))
+                    new_outputs.append(proj(old_output))
+                    proj.configure(feats)
+                all_new_outputs.append(new_outputs)
+
+            new_feat_model = tf.keras.models.Model(feat_model.input,
+                                                   {'style': all_new_outputs[0], 'content': all_new_outputs[1]})
+            logging.info(f'features projected to {proj_dim} maximum dimensions with {ProjClass.__name__}')
+
+            self.feat_model = new_feat_model
 
 
 def make_feat_model(input_shape):
@@ -240,37 +325,33 @@ def make_feat_model(input_shape):
     return sc_model
 
 
-def configure_feat_model(sc_model, style_image, content_image):
-    feat_model = sc_model.feat_model
+def make_discriminator(feat_model):
+    if FLAGS.disc_model is None:
+        return None
 
-    # Configure the standardize layers if any
-    # Standardize layers before building the generated image
-    # or else the standardize layers will be configured on the gen image
-    logging.info('configuring standardize layers')
-    feats_dict = feat_model((style_image, content_image))
-
-    # Build the gen image
-    logging.info('building gen image')
-    sc_model((style_image, content_image))
-
-    # Add and configure the PCA layers if requested
-    if (FLAGS.pca is not None and FLAGS.pca > 0) or (FLAGS.ica is not None and FLAGS.ica > 0):
-        ProjClass = PCA if FLAGS.pca is not None else FastICA
-        proj_dim = FLAGS.pca or FLAGS.ica
-        all_new_outputs = []
-
-        for key in ['style', 'content']:
-            new_outputs = []
-            for old_output, feats, in zip(feat_model.output[key], feats_dict[key]):
-                n_samples = old_output.shape[1] * old_output.shape[2]
-                n_features = old_output.shape[-1]
-                proj = ProjClass(min(proj_dim, n_features, n_samples))
-                new_outputs.append(proj(old_output))
-                proj.configure(feats)
-            all_new_outputs.append(new_outputs)
-
-        new_feat_model = tf.keras.models.Model(feat_model.input,
-                                               {'style': all_new_outputs[0], 'content': all_new_outputs[1]})
-        logging.info(f'features projected to {proj_dim} maximum dimensions with {ProjClass.__name__}')
-
-        sc_model.feat_model = new_feat_model
+    inputs, outputs = [], []
+    for style_output in feat_model.output['style']:
+        input = tf.keras.Input(style_output.shape[1:])
+        if FLAGS.disc_model == 'fast':
+            layer_disc = tf.keras.Sequential([
+                tfa.layers.SpectralNormalization(tf.keras.layers.Dense(1))
+            ])
+        elif FLAGS.disc_model == 'mlp':
+            layer_disc = tf.keras.Sequential([
+                tfa.layers.SpectralNormalization(tf.keras.layers.Dense(512)),
+                tf.keras.layers.BatchNormalization(),
+                tf.keras.layers.ELU(),
+                tfa.layers.SpectralNormalization(tf.keras.layers.Dense(512)),
+                tf.keras.layers.BatchNormalization(),
+                tf.keras.layers.ELU(),
+                tfa.layers.SpectralNormalization(tf.keras.layers.Dense(512)),
+                tf.keras.layers.BatchNormalization(),
+                tf.keras.layers.ELU(),
+                tfa.layers.SpectralNormalization(tf.keras.layers.Dense(1)),
+            ])
+        else:
+            raise ValueError(f'unknown discriminator model: {FLAGS.disc_model}')
+        output = layer_disc(input)
+        inputs.append(input)
+        outputs.append(output)
+    return tf.keras.Model(inputs, outputs)

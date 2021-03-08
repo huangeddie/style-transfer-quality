@@ -13,7 +13,7 @@ from utils import plot_loss, log_feat_distribution, plot_layer_grams, setup, loa
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_multi_enum('losses', ['m2'], ['m1', 'm2', 'covar', 'gram', 'm3', 'wass', 'cowass', 'rpwass'],
+flags.DEFINE_multi_enum('losses', None, ['m1', 'm2', 'covar', 'gram', 'm3', 'wass', 'cowass', 'rpwass'],
                         'type of loss to use')
 
 
@@ -34,7 +34,8 @@ def main(argv):
         raw_feat_model = scm.make_feat_model(image_shape)
         sc_model = scm.SCModel(raw_feat_model)
         # Configure the model to the style and content images
-        scm.configure_feat_model(sc_model, style_image, content_image)
+        sc_model.configure(style_image, content_image)
+        sc_model.add_optional_discriminator(scm.make_discriminator(sc_model.feat_model))
 
     # Plot the feature model structure
     tf.keras.utils.plot_model(sc_model.feat_model, './out/feat_model.jpg')
