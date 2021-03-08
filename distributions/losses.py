@@ -90,7 +90,7 @@ class CoWassLoss(tf.keras.losses.Loss):
 class RandPairWassLoss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
         y_shape = tf.shape(y_true)
-        b, h, w, c = y_shape
+        b, h, w, c = [y_shape[i] for i in range(4)]
         rand_idx = tf.random.uniform([], maxval=c, dtype=tf.int32)
         rand_comp1 = y_true[:, :, :, rand_idx:rand_idx + 1]
         rand_comp2 = y_pred[:, :, :, rand_idx:rand_idx + 1]
