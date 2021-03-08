@@ -87,5 +87,22 @@ class CoWassLoss(tf.keras.losses.Loss):
         return loss
 
 
+class RandPairWassLoss(tf.keras.losses.Loss):
+    def call(self, y_true, y_pred):
+        y_shape = tf.shape(y_true)
+        b, h, w, c = y_shape
+        rand_idx = tf.random.uniform([], maxval=c, dtype=tf.int32)
+        rand_comp1 = y_true[:, :, :, rand_idx:rand_idx + 1]
+        rand_comp2 = y_pred[:, :, :, rand_idx:rand_idx + 1]
+
+        co1 = tf.squeeze(tf.einsum('bhwc,bhwd->bhwcd', y_true, rand_comp1), -1)
+        co2 = tf.squeeze(tf.einsum('bhwc,bhwd->bhwcd', y_pred, rand_comp2), -1)
+
+        cat_feats1 = tf.concat([y_true, co1], -1)
+        cat_feats2 = tf.concat([y_pred, co2], -1)
+
+        return compute_wass_dist(cat_feats1, cat_feats2, p=2)
+
+
 loss_dict = {'m1': FirstMomentLoss(), 'm2': SecondMomentLoss(), 'covar': CovarLoss(), 'gram': GramianLoss(),
-             'm3': ThirdMomentLoss(), 'wass': WassLoss(), 'cowass': CoWassLoss()}
+             'm3': ThirdMomentLoss(), 'wass': WassLoss(), 'cowass': CoWassLoss(), 'rpwass': RandPairWassLoss()}
