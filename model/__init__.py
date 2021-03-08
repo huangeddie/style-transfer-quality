@@ -175,7 +175,7 @@ class SCModel(tf.keras.Model):
         # Clip to RGB range
         self.gen_image.assign(tf.clip_by_value(self.gen_image, 0, 255))
 
-        # Return a dict mapping metric names to current value
+        # Return a dict mapping metric names to current value + the discriminator loss
         return {**{m.name: m.result() for m in self.metrics}, 'd_loss': d_loss}
 
     def gen_step(self, images, feats):
