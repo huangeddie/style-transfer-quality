@@ -110,16 +110,13 @@ def make_discriminator(feat_model):
             ])
         elif FLAGS.disc_model == 'mlp':
             layer_disc = tf.keras.Sequential([
-                tfa.layers.SpectralNormalization(tf.keras.layers.Dense(feat_dim)),
-                tf.keras.layers.BatchNormalization(),
+                tf.keras.layers.Dense(min(2 * feat_dim, 512)),
                 tf.keras.layers.ELU(),
-                tfa.layers.SpectralNormalization(tf.keras.layers.Dense(feat_dim)),
-                tf.keras.layers.BatchNormalization(),
+                tf.keras.layers.Dense(min(2 * feat_dim, 512)),
                 tf.keras.layers.ELU(),
-                tfa.layers.SpectralNormalization(tf.keras.layers.Dense(feat_dim)),
-                tf.keras.layers.BatchNormalization(),
+                tf.keras.layers.Dense(min(2 * feat_dim, 512)),
                 tf.keras.layers.ELU(),
-                tfa.layers.SpectralNormalization(tf.keras.layers.Dense(1)),
+                tf.keras.layers.Dense(1),
             ])
         else:
             raise ValueError(f'unknown discriminator model: {FLAGS.disc_model}')
@@ -133,7 +130,6 @@ class SCModel(tf.keras.Model):
     def __init__(self, feat_model, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.feat_model = feat_model
-        self.bce_loss = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 
     def build(self, input_shape):
         if FLAGS.start_image == 'rand':
@@ -220,20 +216,42 @@ class SCModel(tf.keras.Model):
 
             # Add discriminator loss if any
             if hasattr(self, 'discriminator'):
-                fake_labels = []
-                for feats in gen_feats['style']:
-                    shape = tf.shape(feats)
-                    b, h, w, c = [shape[i] for i in range(4)]
-                    fake_labels.append(tf.ones([b, h, w]))
                 d_logits = self.discriminator(gen_feats['style'])
-                for labels, logits in zip(fake_labels, d_logits):
-                    loss += self.bce_loss(labels, logits)
+                for logits in d_logits:
+                    loss += tf.reduce_mean(logits)
         # Optimize generated image
         grad = tape.gradient(loss, [self.gen_image])
 
         # Update metrics
         self.compiled_metrics.update_state(feats, gen_feats)
         return grad, [self.gen_image]
+
+    def gradient_penalty(self, all_real_feats, all_fake_feats):
+        """ Calculates the gradient penalty.
+
+        This loss is calculated on an interpolated image
+        and added to the discriminator loss.
+        """
+        # Get the interpolated image
+        all_interpolated = []
+        for real_feats, fake_feats in zip(all_real_feats, all_fake_feats):
+            shape = tf.shape(real_feats)
+            b, h, w, c = [shape[i] for i in range(4)]
+            alpha = tf.random.uniform([b, h, w, 1], 0.0, 1.0)
+            interpolated = alpha * real_feats + (1 - alpha) * fake_feats
+            all_interpolated.append(interpolated)
+
+        with tf.GradientTape() as gp_tape:
+            gp_tape.watch(all_interpolated)
+            # 1. Get the discriminator output for this interpolated image.
+            d_out = self.discriminator(all_interpolated)
+
+        # 2. Calculate the gradients w.r.t to this interpolated image.
+        grads = gp_tape.gradient(d_out, all_interpolated)
+        # 3. Calculate the norm of the gradients.
+        norms = [tf.sqrt(tf.reduce_sum(tf.square(g), axis=-1)) for g in grads]
+        gps = [tf.reduce_mean((n - 1) ** 2) for n in norms]
+        return gps
 
     def disc_step(self, images, feats):
         gen_feats = self(images, training=False)
@@ -242,12 +260,14 @@ class SCModel(tf.keras.Model):
             shape = tf.shape(r_feats)
             b, h, w, c = [shape[i] for i in range(4)]
             cat_feats.append(tf.concat([r_feats, g_feats], axis=0))
-            cat_labels.append(tf.concat([tf.ones([b, h, w]), tf.zeros([b, h, w])], axis=0))
+            cat_labels.append(tf.concat([tf.ones([b, h, w, 1]), -tf.ones([b, h, w, 1])], axis=0))
         with tf.GradientTape() as tape:
-            d_logits = self.discriminator(cat_feats)
-            d_loss = 0
-            for labels, logits in zip(cat_labels, d_logits):
-                d_loss += self.bce_loss(labels, logits)
+            real_logits = self.discriminator(feats['style'])
+            gen_logits = self.discriminator(gen_feats['style'])
+            gps = self.gradient_penalty(feats['style'], gen_feats['style'])
+            d_costs = [rl - gl for rl, gl in zip(real_logits, gen_logits)]
+            d_loss = [tf.reduce_mean(dc + 10 * gp) for dc, gp in zip(d_costs, gps)]
+            d_loss = tf.reduce_sum(d_loss)
         d_grads = tape.gradient(d_loss, self.discriminator.trainable_weights)
         return d_loss, d_grads, self.discriminator.trainable_weights
 
