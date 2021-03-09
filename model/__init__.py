@@ -9,7 +9,7 @@ FLAGS = flags.FLAGS
 flags.DEFINE_enum('start_image', 'rand', ['rand', 'black'], 'image size')
 
 flags.DEFINE_enum('feat_model', 'vgg19', ['vgg19', 'nasnetlarge', 'fast'], 'feature model architecture')
-flags.DEFINE_integer('layers', 0, 'number of layers to use from the feature model')
+flags.DEFINE_integer('layers', 5, 'number of layers to use from the feature model')
 flags.DEFINE_enum('disc_model', None, ['mlp', 'fast'], 'discriminator model architecture')
 
 flags.DEFINE_bool('shift', False, 'standardize outputs based on the style & content features')
