@@ -251,7 +251,7 @@ class SCModel(tf.keras.Model):
         # 2. Calculate the gradients w.r.t to this interpolated image.
         grads = gp_tape.gradient(d_out, all_interpolated)
         # 3. Calculate the norm of the gradients.
-        norms = [tf.sqrt(tf.reduce_sum(tf.square(g), axis=-1) + 1e-8) for g in grads]
+        norms = [tf.norm(g, axis=-1) for g in grads]
         gps = [tf.reduce_mean((n - 1) ** 2) for n in norms]
         return gps
 
@@ -261,10 +261,10 @@ class SCModel(tf.keras.Model):
             real_logits = self.discriminator(feats['style'])
             gen_logits = self.discriminator(gen_feats['style'])
             gps = self.gradient_penalty(feats['style'], gen_feats['style'])
-            gps = tf.reduce_mean(gps)
+            gps = tf.reduce_sum(gps)
             if isinstance(real_logits, list):
                 d_costs = [tf.reduce_mean(rl - gl) for rl, gl in zip(real_logits, gen_logits)]
-                d_costs = tf.reduce_mean(d_costs)
+                d_costs = tf.reduce_sum(d_costs)
             else:
                 d_costs = tf.reduce_mean(real_logits - gen_logits)
             d_loss = d_costs + 10 * gps
