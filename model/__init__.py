@@ -266,7 +266,7 @@ class SCModel(tf.keras.Model):
             gen_logits = self.discriminator(gen_feats['style'])
             gps = self.gradient_penalty(feats['style'], gen_feats['style'])
             d_costs = [rl - gl for rl, gl in zip(real_logits, gen_logits)]
-            d_loss = [tf.reduce_mean(dc + 10 * gp) for dc, gp in zip(d_costs, gps)]
+            d_loss = [tf.reduce_mean(dc) + 10 * gp for dc, gp in zip(d_costs, gps)]
             d_loss = tf.reduce_sum(d_loss)
         d_grads = tape.gradient(d_loss, self.discriminator.trainable_weights)
         return d_loss, d_grads, self.discriminator.trainable_weights
