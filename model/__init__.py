@@ -11,6 +11,7 @@ flags.DEFINE_enum('start_image', 'rand', ['rand', 'black'], 'image size')
 flags.DEFINE_enum('feat_model', 'vgg19', ['vgg19', 'nasnetlarge', 'fast'], 'feature model architecture')
 flags.DEFINE_integer('layers', 5, 'number of layers to use from the feature model')
 flags.DEFINE_enum('disc_model', None, ['mlp', 'fast'], 'discriminator model architecture')
+flags.DEFINE_float('disc_l2', 0, 'l2 reg for discriminator')
 
 flags.DEFINE_bool('shift', False, 'standardize outputs based on the style & content features')
 flags.DEFINE_bool('scale', False, 'standardize outputs based on the style & content features')
@@ -101,21 +102,23 @@ def make_discriminator(feat_model):
 
     inputs, outputs = [], []
     for style_output in feat_model.output['style']:
+        l2_reg = tf.keras.regularizers.L2(FLAGS.disc_l2)
         input_shape = style_output.shape[1:]
         feat_dim = input_shape[-1]
+        hdim = min(max(2 * feat_dim, 64), 512)
         if FLAGS.disc_model == 'fast':
             layer_disc = tf.keras.Sequential([
-                tf.keras.layers.Dense(1)
+                tf.keras.layers.Dense(1, kernel_regularizer=l2_reg, bias_regularizer=l2_reg)
             ])
         elif FLAGS.disc_model == 'mlp':
             layer_disc = tf.keras.Sequential([
-                tf.keras.layers.Dense(min(max(2 * feat_dim, 64), 512)),
+                tf.keras.layers.Dense(hdim, kernel_regularizer=l2_reg, bias_regularizer=l2_reg),
                 tf.keras.layers.BatchNormalization(),
                 tf.keras.layers.ReLU(),
-                tf.keras.layers.Dense(min(max(2 * feat_dim, 64), 512)),
+                tf.keras.layers.Dense(hdim, kernel_regularizer=l2_reg, bias_regularizer=l2_reg),
                 tf.keras.layers.BatchNormalization(),
                 tf.keras.layers.ReLU(),
-                tf.keras.layers.Dense(1),
+                tf.keras.layers.Dense(1, kernel_regularizer=l2_reg, bias_regularizer=l2_reg),
             ])
         else:
             raise ValueError(f'unknown discriminator model: {FLAGS.disc_model}')
