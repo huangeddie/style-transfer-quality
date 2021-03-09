@@ -190,9 +190,9 @@ class SCModel(tf.keras.Model):
 
         # Train the discriminator
         if hasattr(self, 'discriminator'):
-            d_loss, d_grads, d_weights = self.disc_step(images, feats)
+            d_cost, gp, d_grads, d_weights = self.disc_step(images, feats)
         else:
-            d_loss, d_grads, d_weights = None, [], []
+            d_cost, gp, d_grads, d_weights = None, None, [], []
 
         # Train the generated image
         g_grads, g_weights = self.gen_step(images, feats)
@@ -203,7 +203,7 @@ class SCModel(tf.keras.Model):
         self.gen_image.assign(tf.clip_by_value(self.gen_image, 0, 255))
 
         # Return a dict mapping metric names to current value + the discriminator loss
-        return {**{m.name: m.result() for m in self.metrics}, 'd_loss': d_loss}
+        return {**{m.name: m.result() for m in self.metrics}, 'd_cost': d_cost, 'gp': gp}
 
     def gen_step(self, images, feats):
         with tf.GradientTape() as tape:
@@ -259,11 +259,12 @@ class SCModel(tf.keras.Model):
             real_logits = self.discriminator(feats['style'])
             gen_logits = self.discriminator(gen_feats['style'])
             gps = self.gradient_penalty(feats['style'], gen_feats['style'])
-            d_costs = [rl - gl for rl, gl in zip(real_logits, gen_logits)]
-            d_loss = [tf.reduce_mean(dc) + 10 * gp for dc, gp in zip(d_costs, gps)]
-            d_loss = tf.reduce_sum(d_loss)
+            gps = tf.reduce_sum(gps)
+            d_costs = [tf.reduce_mean(rl - gl) for rl, gl in zip(real_logits, gen_logits)]
+            d_costs = tf.reduce_sum(d_costs)
+            d_loss = d_costs + 10 * gps
         d_grads = tape.gradient(d_loss, self.discriminator.trainable_weights)
-        return d_loss, d_grads, self.discriminator.trainable_weights
+        return d_costs, gps, d_grads, self.discriminator.trainable_weights
 
     def get_gen_image(self):
         return tf.constant(tf.cast(self.gen_image, tf.uint8))

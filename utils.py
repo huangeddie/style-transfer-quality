@@ -69,8 +69,8 @@ def get_layer_grams(layer_feats):
 
 def plot_loss(logs_df, path):
     plt.figure()
-    logs_df = logs_df.filter(like='loss')
-    logs_df.plot(logy=True)
+    logs_df = logs_df.filter(regex='^((?!epoch).)*$')
+    logs_df.plot()
     plt.xlabel('train steps')
     plt.legend()
     plt.tight_layout()
