@@ -67,13 +67,13 @@ def make_feat_model(input_shape):
 
         x = style_input
         style_output = []
-        for layer in [avg_pool1, avg_pool2]:
+        for layer in [avg_pool1, avg_pool2][:FLAGS.layers]:
             x = layer(x)
             style_output.append(x)
 
         x = content_input
         content_output = []
-        for layer in [avg_pool1, avg_pool2]:
+        for layer in [avg_pool1, avg_pool2][:FLAGS.layers]:
             x = layer(x)
             content_output.append(x)
 
@@ -215,8 +215,11 @@ class SCModel(tf.keras.Model):
             # Add discriminator loss if any
             if hasattr(self, 'discriminator'):
                 d_logits = self.discriminator(gen_feats['style'])
-                gen_loss = [tf.reduce_mean(logits) for logits in d_logits]
-                gen_loss = tf.reduce_mean(gen_loss)
+                if isinstance(d_logits, list):
+                    gen_loss = [tf.reduce_mean(logits) for logits in d_logits]
+                    gen_loss = tf.reduce_mean(gen_loss)
+                else:
+                    gen_loss = tf.reduce_mean(d_logits)
                 loss += gen_loss
         # Optimize generated image
         grad = tape.gradient(loss, [self.gen_image])
@@ -259,8 +262,11 @@ class SCModel(tf.keras.Model):
             gen_logits = self.discriminator(gen_feats['style'])
             gps = self.gradient_penalty(feats['style'], gen_feats['style'])
             gps = tf.reduce_mean(gps)
-            d_costs = [tf.reduce_mean(rl - gl) for rl, gl in zip(real_logits, gen_logits)]
-            d_costs = tf.reduce_mean(d_costs)
+            if isinstance(real_logits, list):
+                d_costs = [tf.reduce_mean(rl - gl) for rl, gl in zip(real_logits, gen_logits)]
+                d_costs = tf.reduce_mean(d_costs)
+            else:
+                d_costs = tf.reduce_mean(real_logits - gen_logits)
             d_loss = d_costs + 10 * gps
         d_grads = tape.gradient(d_loss, self.discriminator.trainable_weights)
         return d_costs, gps, d_grads, self.discriminator.trainable_weights
