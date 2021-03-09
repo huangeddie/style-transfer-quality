@@ -1,5 +1,4 @@
 import tensorflow as tf
-import tensorflow_addons as tfa
 from absl import flags
 from absl import logging
 
@@ -10,6 +9,7 @@ FLAGS = flags.FLAGS
 flags.DEFINE_enum('start_image', 'rand', ['rand', 'black'], 'image size')
 
 flags.DEFINE_enum('feat_model', 'vgg19', ['vgg19', 'nasnetlarge', 'fast'], 'feature model architecture')
+flags.DEFINE_integer('layers', 0, 'number of layers to use from the feature model')
 flags.DEFINE_enum('disc_model', None, ['mlp', 'fast'], 'discriminator model architecture')
 
 flags.DEFINE_bool('shift', False, 'standardize outputs based on the style & content features')
@@ -29,7 +29,7 @@ def make_feat_model(input_shape):
         vgg19.trainable = False
 
         content_layers = ['block5_conv2']
-        style_layers = ['block1_conv1', 'block2_conv1', 'block3_conv1', 'block4_conv1', 'block5_conv1']
+        style_layers = [f'block{i}_conv1' for i in range(1, FLAGS.layers + 1)]
         vgg_style_outputs = [vgg19.get_layer(name).output for name in style_layers]
         vgg_content_outputs = [vgg19.get_layer(name).output for name in content_layers]
 
