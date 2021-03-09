@@ -102,24 +102,22 @@ def make_discriminator(feat_model):
     inputs, outputs = [], []
     for style_output in feat_model.output['style']:
         input_shape = style_output.shape[1:]
-        input = tf.keras.Input(input_shape)
         feat_dim = input_shape[-1]
         if FLAGS.disc_model == 'fast':
             layer_disc = tf.keras.Sequential([
-                tfa.layers.SpectralNormalization(tf.keras.layers.Dense(1))
+                tf.keras.layers.Dense(1)
             ])
         elif FLAGS.disc_model == 'mlp':
             layer_disc = tf.keras.Sequential([
-                tf.keras.layers.Dense(min(2 * feat_dim, 512)),
-                tf.keras.layers.ELU(),
-                tf.keras.layers.Dense(min(2 * feat_dim, 512)),
-                tf.keras.layers.ELU(),
-                tf.keras.layers.Dense(min(2 * feat_dim, 512)),
-                tf.keras.layers.ELU(),
+                tf.keras.layers.Dense(min(max(2 * feat_dim, 64), 512)),
+                tf.keras.layers.ReLU(),
+                tf.keras.layers.Dense(min(max(2 * feat_dim, 64), 512)),
+                tf.keras.layers.ReLU(),
                 tf.keras.layers.Dense(1),
             ])
         else:
             raise ValueError(f'unknown discriminator model: {FLAGS.disc_model}')
+        input = tf.keras.Input(input_shape)
         output = layer_disc(input)
         inputs.append(input)
         outputs.append(output)
