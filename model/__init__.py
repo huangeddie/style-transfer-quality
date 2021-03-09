@@ -235,7 +235,7 @@ class SCModel(tf.keras.Model):
         for real_feats, fake_feats in zip(all_real_feats, all_fake_feats):
             shape = tf.shape(real_feats)
             b, h, w, c = [shape[i] for i in range(4)]
-            alpha = tf.random.uniform([b, h, w, 1], 0.0, 1.0)
+            alpha = tf.random.uniform([b, h, w, 1])
             interpolated = alpha * real_feats + (1 - alpha) * fake_feats
             all_interpolated.append(interpolated)
 
@@ -257,9 +257,9 @@ class SCModel(tf.keras.Model):
             real_logits = self.discriminator(feats['style'])
             gen_logits = self.discriminator(gen_feats['style'])
             gps = self.gradient_penalty(feats['style'], gen_feats['style'])
-            gps = tf.reduce_sum(gps)
+            gps = tf.reduce_mean(gps)
             d_costs = [tf.reduce_mean(rl - gl) for rl, gl in zip(real_logits, gen_logits)]
-            d_costs = tf.reduce_sum(d_costs)
+            d_costs = tf.reduce_mean(d_costs)
             d_loss = d_costs + 10 * gps
         d_grads = tape.gradient(d_loss, self.discriminator.trainable_weights)
         return d_costs, gps, d_grads, self.discriminator.trainable_weights
