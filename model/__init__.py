@@ -255,12 +255,6 @@ class SCModel(tf.keras.Model):
 
     def disc_step(self, images, feats):
         gen_feats = self(images, training=False)
-        cat_feats, cat_labels = [], []
-        for r_feats, g_feats in zip(feats['style'], gen_feats['style']):
-            shape = tf.shape(r_feats)
-            b, h, w, c = [shape[i] for i in range(4)]
-            cat_feats.append(tf.concat([r_feats, g_feats], axis=0))
-            cat_labels.append(tf.concat([tf.ones([b, h, w, 1]), -tf.ones([b, h, w, 1])], axis=0))
         with tf.GradientTape() as tape:
             real_logits = self.discriminator(feats['style'])
             gen_logits = self.discriminator(gen_feats['style'])
