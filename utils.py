@@ -95,7 +95,7 @@ def log_feat_distribution(feats_dict, title):
 def plot_layer_grams(raw_feats_dict, feats_dict, filepath):
     raw_grams = get_layer_grams(raw_feats_dict['style'])
     proj_grams = get_layer_grams(feats_dict['style'])
-    f, ax = plt.subplots(2, len(raw_grams))
+    f, ax = plt.subplots(2, len(raw_grams), squeeze=False)
     f.set_size_inches(len(raw_grams) * 4, 5)
     for i, (raw_gram, proj_gram) in enumerate(zip(raw_grams, proj_grams)):
         ax[0, i].set_title(f'raw gram {i}')
