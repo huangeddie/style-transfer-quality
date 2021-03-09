@@ -110,8 +110,10 @@ def make_discriminator(feat_model):
         elif FLAGS.disc_model == 'mlp':
             layer_disc = tf.keras.Sequential([
                 tf.keras.layers.Dense(min(max(2 * feat_dim, 64), 512)),
+                tf.keras.layers.BatchNormalization(),
                 tf.keras.layers.ReLU(),
                 tf.keras.layers.Dense(min(max(2 * feat_dim, 64), 512)),
+                tf.keras.layers.BatchNormalization(),
                 tf.keras.layers.ReLU(),
                 tf.keras.layers.Dense(1),
             ])
