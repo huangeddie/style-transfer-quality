@@ -215,8 +215,9 @@ class SCModel(tf.keras.Model):
             # Add discriminator loss if any
             if hasattr(self, 'discriminator'):
                 d_logits = self.discriminator(gen_feats['style'])
-                for logits in d_logits:
-                    loss += tf.reduce_mean(logits)
+                gen_loss = [tf.reduce_mean(logits) for logits in d_logits]
+                gen_loss = tf.reduce_mean(gen_loss)
+                loss += gen_loss
         # Optimize generated image
         grad = tape.gradient(loss, [self.gen_image])
 
