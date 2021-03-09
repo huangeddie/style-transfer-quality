@@ -113,10 +113,8 @@ def make_discriminator(feat_model):
         elif FLAGS.disc_model == 'mlp':
             layer_disc = tf.keras.Sequential([
                 tf.keras.layers.Dense(hdim, kernel_regularizer=l2_reg, bias_regularizer=l2_reg),
-                tf.keras.layers.BatchNormalization(),
                 tf.keras.layers.ReLU(),
                 tf.keras.layers.Dense(hdim, kernel_regularizer=l2_reg, bias_regularizer=l2_reg),
-                tf.keras.layers.BatchNormalization(),
                 tf.keras.layers.ReLU(),
                 tf.keras.layers.Dense(1, kernel_regularizer=l2_reg, bias_regularizer=l2_reg),
             ])
