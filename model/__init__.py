@@ -251,7 +251,7 @@ class SCModel(tf.keras.Model):
         # 2. Calculate the gradients w.r.t to this interpolated image.
         grads = gp_tape.gradient(d_out, all_interpolated)
         # 3. Calculate the norm of the gradients.
-        norms = [tf.sqrt(tf.reduce_sum(tf.square(g), axis=-1)) for g in grads]
+        norms = [tf.sqrt(tf.reduce_sum(tf.square(g), axis=-1) + 1e-8) for g in grads]
         gps = [tf.reduce_mean((n - 1) ** 2) for n in norms]
         return gps
 
