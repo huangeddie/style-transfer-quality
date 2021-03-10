@@ -284,10 +284,7 @@ class SCModel(tf.keras.Model):
                 gen_loss = self.bce_loss(tf.zeros_like(gen_logits), gen_logits)
                 d_loss = real_loss + gen_loss
         d_grads = tape.gradient(d_loss, self.discriminator.trainable_weights)
-        real_acc = tf.keras.metrics.binary_accuracy(tf.ones_like(real_logits), real_logits)
-        gen_acc = tf.keras.metrics.binary_accuracy(tf.ones_like(gen_logits), gen_logits)
-        d_acc = (real_acc + gen_acc) / 2
-        return d_grads, self.discriminator.trainable_weights, {'d_loss': d_loss, 'd_acc': d_acc}
+        return d_grads, self.discriminator.trainable_weights, {'d_loss': d_loss}
 
     def get_gen_image(self):
         return tf.constant(tf.cast(self.gen_image, tf.uint8))
