@@ -12,8 +12,6 @@ flags.DEFINE_enum('start_image', 'rand', ['rand', 'black'], 'image size')
 flags.DEFINE_enum('feat_model', 'vgg19', ['vgg19', 'nasnetlarge', 'fast'], 'feature model architecture')
 flags.DEFINE_integer('layers', 5, 'number of layers to use from the feature model')
 flags.DEFINE_enum('disc_model', None, ['mlp', 'fast'], 'discriminator model architecture')
-flags.DEFINE_float('disc_l2', 0, 'l2 reg for discriminator')
-flags.DEFINE_float('grad_clip', None, 'gradient norm clip')
 
 flags.DEFINE_bool('shift', False, 'standardize outputs based on the style & content features')
 flags.DEFINE_bool('scale', False, 'standardize outputs based on the style & content features')
@@ -111,24 +109,23 @@ def make_discriminator(feat_model):
 
     inputs, outputs = [], []
     for style_output in feat_model.output['style']:
-        l2_reg = tf.keras.regularizers.L2(FLAGS.disc_l2)
         input_shape = style_output.shape[1:]
         feat_dim = input_shape[-1]
         hdim = min(max(2 * feat_dim, 64), 512)
         if FLAGS.disc_model == 'fast':
             layer_disc = tf.keras.Sequential([
-                tfa.layers.SpectralNormalization(tf.keras.layers.Dense(1, kernel_regularizer=l2_reg, bias_regularizer=l2_reg)),
+                tfa.layers.SpectralNormalization(tf.keras.layers.Dense(1)),
                 Scale(2),
             ])
         elif FLAGS.disc_model == 'mlp':
             layer_disc = tf.keras.Sequential([
-                tfa.layers.SpectralNormalization(tf.keras.layers.Dense(hdim, kernel_regularizer=l2_reg, bias_regularizer=l2_reg)),
+                tfa.layers.SpectralNormalization(tf.keras.layers.Dense(hdim)),
                 Scale(2),
                 tf.keras.layers.ReLU(),
-                tfa.layers.SpectralNormalization(tf.keras.layers.Dense(hdim, kernel_regularizer=l2_reg, bias_regularizer=l2_reg)),
+                tfa.layers.SpectralNormalization(tf.keras.layers.Dense(hdim)),
                 Scale(2),
                 tf.keras.layers.ReLU(),
-                tfa.layers.SpectralNormalization(tf.keras.layers.Dense(1, kernel_regularizer=l2_reg, bias_regularizer=l2_reg)),
+                tfa.layers.SpectralNormalization(tf.keras.layers.Dense(1)),
                 Scale(2),
             ])
         else:
@@ -144,6 +141,7 @@ class SCModel(tf.keras.Model):
     def __init__(self, feat_model, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.feat_model = feat_model
+        self.bce_loss = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 
     def build(self, input_shape):
         if FLAGS.start_image == 'rand':
@@ -276,17 +274,20 @@ class SCModel(tf.keras.Model):
         with tf.GradientTape() as tape:
             real_logits = self.discriminator(feats['style'], training=True)
             gen_logits = self.discriminator(gen_feats['style'], training=True)
-            gp, d_lip = self.gradient_penalty(feats['style'], gen_feats['style'])
             if isinstance(real_logits, list):
-                d_costs = [tf.reduce_mean(rl - gl) for rl, gl in zip(real_logits, gen_logits)]
-                d_costs = tf.reduce_sum(d_costs)
+                d_loss = 0
+                for rl, gl in zip(real_logits, gen_logits):
+                    d_loss += self.bce_loss(tf.ones_like(rl), rl) + self.bce_loss(tf.zeros_like(gl), gl)
+                d_loss = tf.reduce_sum(d_loss)
             else:
-                d_costs = tf.reduce_mean(real_logits - gen_logits)
-            d_loss = d_costs + 10 * gp
+                real_loss = self.bce_loss(tf.ones_like(real_logits), real_logits)
+                gen_loss = self.bce_loss(tf.zeros_like(gen_logits), gen_logits)
+                d_loss = real_loss + gen_loss
         d_grads = tape.gradient(d_loss, self.discriminator.trainable_weights)
-        if FLAGS.grad_clip is not None:
-            d_grads = [tf.clip_by_norm(g, FLAGS.grad_clip) for g in d_grads]
-        return d_grads, self.discriminator.trainable_weights, {'d_cost': d_costs, 'gp': gp, 'd_lip': d_lip}
+        real_acc = tf.keras.metrics.binary_accuracy(tf.ones_like(real_logits), real_logits)
+        gen_acc = tf.keras.metrics.binary_accuracy(tf.ones_like(gen_logits), gen_logits)
+        d_acc = (real_acc + gen_acc) / 2
+        return d_grads, self.discriminator.trainable_weights, {'d_loss': d_loss, 'd_acc': d_acc}
 
     def get_gen_image(self):
         return tf.constant(tf.cast(self.gen_image, tf.uint8))
