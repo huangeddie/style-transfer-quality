@@ -272,6 +272,7 @@ class SCModel(tf.keras.Model):
                 d_costs = tf.reduce_mean(real_logits - gen_logits)
             d_loss = d_costs + 10 * gps
         d_grads = tape.gradient(d_loss, self.discriminator.trainable_weights)
+        d_grads = [tf.clip_by_norm(g, 1) for g in d_grads]
         return d_costs, gps, d_grads, self.discriminator.trainable_weights
 
     def get_gen_image(self):
