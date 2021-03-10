@@ -217,7 +217,10 @@ class SCModel(tf.keras.Model):
         self.gen_image.assign(tf.clip_by_value(self.gen_image, 0, 255))
 
         # Return a dict mapping metric names to current value + the discriminator loss
-        return {**{m.name: m.result() for m in self.metrics}, 'd_cost': d_cost, 'gp': gp}
+        metrics = {**{m.name: m.result() for m in self.metrics}, 'd_cost': d_cost, 'gp': gp}
+        if len(d_grads) > 0:
+            metrics['d_norm'] = tf.reduce_mean([tf.norm(g) for g in d_grads])
+        return metrics
 
     def gen_step(self, images, feats):
         with tf.GradientTape() as tape:

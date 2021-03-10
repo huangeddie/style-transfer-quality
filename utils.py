@@ -68,13 +68,15 @@ def get_layer_grams(layer_feats):
 
 
 def plot_loss(logs_df, path):
-    plt.figure()
     logs_df = logs_df.filter(regex='^((?!epoch).)*$')
-    logs_df.plot(alpha=0.5)
-    plt.xlabel('train steps')
-    plt.legend()
-    plt.tight_layout()
-    plt.savefig(path)
+    nrows = len(logs_df.columns)
+    f, axes = plt.subplots(nrows)
+    f.set_size_inches(5, nrows * 5)
+    for col, ax in zip(logs_df.columns, axes):
+        logs_df[col].plot(logy=min(logs_df[col]) > 0, ax=ax)
+        ax.set_title(col)
+    f.tight_layout()
+    f.savefig(path)
 
 
 def log_feat_distribution(feats_dict, title):
