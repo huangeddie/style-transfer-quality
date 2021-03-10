@@ -269,7 +269,7 @@ class SCModel(tf.keras.Model):
         # 3. Calculate the norm of the gradients.
         norms = [tf.norm(g, axis=-1) for g in grads]
         gps = [tf.reduce_mean((n - 1) ** 2) for n in norms]
-        return tf.reduce_sum(gps), tf.reduce_mean(norms)
+        return tf.reduce_sum(gps), tf.reduce_mean([tf.reduce_mean(n) for n in norms])
 
     def disc_step(self, images, feats):
         gen_feats = self(images, training=False)
