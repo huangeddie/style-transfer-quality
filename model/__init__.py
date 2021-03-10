@@ -1,6 +1,7 @@
 import tensorflow as tf
 from absl import flags
 from absl import logging
+import tensorflow_addons as tfa
 
 from model.layers import Preprocess, Standardize, PCA, FastICA
 
@@ -21,6 +22,13 @@ flags.DEFINE_integer('pca', None, 'maximum dimension of features enforced with P
 flags.DEFINE_integer('ica', None, 'maximum dimension of features enforced with FastICa')
 flags.DEFINE_bool('whiten', False, 'whiten the components of PCA/ICA')
 
+class Scale(tf.keras.layers.Layer):
+    def __init__(self, scale, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.scale = tf.constant(scale, self.dtype)
+
+    def call(self, inputs, *args, **kwargs):
+        return inputs * self.scale
 
 def make_feat_model(input_shape):
     style_input = tf.keras.Input(input_shape, name='style')
@@ -109,15 +117,19 @@ def make_discriminator(feat_model):
         hdim = min(max(2 * feat_dim, 64), 512)
         if FLAGS.disc_model == 'fast':
             layer_disc = tf.keras.Sequential([
-                tf.keras.layers.Dense(1, kernel_regularizer=l2_reg, bias_regularizer=l2_reg)
+                tfa.layers.SpectralNormalization(tf.keras.layers.Dense(1, kernel_regularizer=l2_reg, bias_regularizer=l2_reg)),
+                Scale(2),
             ])
         elif FLAGS.disc_model == 'mlp':
             layer_disc = tf.keras.Sequential([
-                tf.keras.layers.Dense(hdim, kernel_regularizer=l2_reg, bias_regularizer=l2_reg),
+                tfa.layers.SpectralNormalization(tf.keras.layers.Dense(hdim, kernel_regularizer=l2_reg, bias_regularizer=l2_reg)),
+                Scale(2),
                 tf.keras.layers.ReLU(),
-                tf.keras.layers.Dense(hdim, kernel_regularizer=l2_reg, bias_regularizer=l2_reg),
+                tfa.layers.SpectralNormalization(tf.keras.layers.Dense(hdim, kernel_regularizer=l2_reg, bias_regularizer=l2_reg)),
+                Scale(2),
                 tf.keras.layers.ReLU(),
-                tf.keras.layers.Dense(1, kernel_regularizer=l2_reg, bias_regularizer=l2_reg),
+                tfa.layers.SpectralNormalization(tf.keras.layers.Dense(1, kernel_regularizer=l2_reg, bias_regularizer=l2_reg)),
+                Scale(2),
             ])
         else:
             raise ValueError(f'unknown discriminator model: {FLAGS.disc_model}')
