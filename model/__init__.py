@@ -12,6 +12,7 @@ flags.DEFINE_enum('feat_model', 'vgg19', ['vgg19', 'nasnetlarge', 'fast'], 'feat
 flags.DEFINE_integer('layers', 5, 'number of layers to use from the feature model')
 flags.DEFINE_enum('disc_model', None, ['mlp', 'fast'], 'discriminator model architecture')
 flags.DEFINE_float('disc_l2', 0, 'l2 reg for discriminator')
+flags.DEFINE_float('grad_clip', None, 'gradient norm clip')
 
 flags.DEFINE_bool('shift', False, 'standardize outputs based on the style & content features')
 flags.DEFINE_bool('scale', False, 'standardize outputs based on the style & content features')
@@ -272,7 +273,8 @@ class SCModel(tf.keras.Model):
                 d_costs = tf.reduce_mean(real_logits - gen_logits)
             d_loss = d_costs + 10 * gps
         d_grads = tape.gradient(d_loss, self.discriminator.trainable_weights)
-        d_grads = [tf.clip_by_norm(g, 1) for g in d_grads]
+        if FLAGS.grad_clip is not None:
+            d_grads = [tf.clip_by_norm(g, FLAGS.grad_clip) for g in d_grads]
         return d_costs, gps, d_grads, self.discriminator.trainable_weights
 
     def get_gen_image(self):
