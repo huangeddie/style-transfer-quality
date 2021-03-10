@@ -230,7 +230,7 @@ class SCModel(tf.keras.Model):
 
             # Add discriminator loss if any
             if hasattr(self, 'discriminator'):
-                d_logits = self.discriminator(gen_feats['style'])
+                d_logits = self.discriminator(gen_feats['style'], training=True)
                 if isinstance(d_logits, list):
                     gen_loss = [tf.reduce_mean(logits) for logits in d_logits]
                     gen_loss = tf.reduce_mean(gen_loss)
@@ -262,7 +262,7 @@ class SCModel(tf.keras.Model):
         with tf.GradientTape() as gp_tape:
             gp_tape.watch(all_interpolated)
             # 1. Get the discriminator output for this interpolated image.
-            d_out = self.discriminator(all_interpolated)
+            d_out = self.discriminator(all_interpolated, training=True)
 
         # 2. Calculate the gradients w.r.t to this interpolated image.
         grads = gp_tape.gradient(d_out, all_interpolated)
@@ -274,8 +274,8 @@ class SCModel(tf.keras.Model):
     def disc_step(self, images, feats):
         gen_feats = self(images, training=False)
         with tf.GradientTape() as tape:
-            real_logits = self.discriminator(feats['style'])
-            gen_logits = self.discriminator(gen_feats['style'])
+            real_logits = self.discriminator(feats['style'], training=True)
+            gen_logits = self.discriminator(gen_feats['style'], training=True)
             gp, d_lip = self.gradient_penalty(feats['style'], gen_feats['style'])
             if isinstance(real_logits, list):
                 d_costs = [tf.reduce_mean(rl - gl) for rl, gl in zip(real_logits, gen_logits)]
