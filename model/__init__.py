@@ -204,9 +204,9 @@ class SCModel(tf.keras.Model):
 
         # Train the discriminator
         if hasattr(self, 'discriminator'):
-            d_cost, gp, d_grads, d_weights = self.disc_step(images, feats)
+            d_grads, d_weights, d_metrics = self.disc_step(images, feats)
         else:
-            d_cost, gp, d_grads, d_weights = None, None, [], []
+            d_grads, d_weights, d_metrics = [], [], {}
 
         # Train the generated image
         g_grads, g_weights = self.gen_step(images, feats)
@@ -217,10 +217,7 @@ class SCModel(tf.keras.Model):
         self.gen_image.assign(tf.clip_by_value(self.gen_image, 0, 255))
 
         # Return a dict mapping metric names to current value + the discriminator loss
-        metrics = {**{m.name: m.result() for m in self.metrics}, 'd_cost': d_cost, 'gp': gp}
-        if len(d_grads) > 0:
-            metrics['d_norm'] = tf.reduce_mean([tf.norm(g) for g in d_grads])
-        return metrics
+        return {**{m.name: m.result() for m in self.metrics}, **d_metrics}
 
     def gen_step(self, images, feats):
         with tf.GradientTape() as tape:
@@ -272,25 +269,24 @@ class SCModel(tf.keras.Model):
         # 3. Calculate the norm of the gradients.
         norms = [tf.norm(g, axis=-1) for g in grads]
         gps = [tf.reduce_mean((n - 1) ** 2) for n in norms]
-        return gps
+        return tf.reduce_sum(gps), tf.reduce_mean(norms)
 
     def disc_step(self, images, feats):
         gen_feats = self(images, training=False)
         with tf.GradientTape() as tape:
             real_logits = self.discriminator(feats['style'])
             gen_logits = self.discriminator(gen_feats['style'])
-            gps = self.gradient_penalty(feats['style'], gen_feats['style'])
-            gps = tf.reduce_sum(gps)
+            gp, d_lip = self.gradient_penalty(feats['style'], gen_feats['style'])
             if isinstance(real_logits, list):
                 d_costs = [tf.reduce_mean(rl - gl) for rl, gl in zip(real_logits, gen_logits)]
                 d_costs = tf.reduce_sum(d_costs)
             else:
                 d_costs = tf.reduce_mean(real_logits - gen_logits)
-            d_loss = d_costs + 10 * gps
+            d_loss = d_costs + 10 * gp
         d_grads = tape.gradient(d_loss, self.discriminator.trainable_weights)
         if FLAGS.grad_clip is not None:
             d_grads = [tf.clip_by_norm(g, FLAGS.grad_clip) for g in d_grads]
-        return d_costs, gps, d_grads, self.discriminator.trainable_weights
+        return d_grads, self.discriminator.trainable_weights, {'d_cost': d_costs, 'gp': gp, 'd_lip': d_lip}
 
     def get_gen_image(self):
         return tf.constant(tf.cast(self.gen_image, tf.uint8))
