@@ -144,7 +144,7 @@ class SCModel(tf.keras.Model):
     def __init__(self, feat_model, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.feat_model = feat_model
-        self.bce_loss = tf.keras.losses.BinaryCrossentropy(from_logits=True, reduction=tf.keras.losses.Reduction.SUM)
+        self.bce_loss = tf.keras.losses.BinaryCrossentropy(from_logits=True, reduction=tf.keras.losses.Reduction.None)
 
     def build(self, input_shape):
         if FLAGS.start_image == 'rand':
@@ -233,10 +233,10 @@ class SCModel(tf.keras.Model):
             if hasattr(self, 'discriminator'):
                 d_logits = self.discriminator(gen_feats['style'], training=True)
                 if isinstance(d_logits, list):
-                    gen_loss = [self.bce_loss(tf.ones_like(logits), logits) for logits in d_logits]
+                    gen_loss = [tf.reduce_mean(self.bce_loss(tf.ones_like(logits), logits)) for logits in d_logits]
                     gen_loss = tf.reduce_sum(gen_loss)
                 else:
-                    gen_loss = self.bce_loss(tf.ones_like(d_logits), d_logits)
+                    gen_loss = tf.reduce_mean(self.bce_loss(tf.ones_like(d_logits), d_logits))
                 loss += gen_loss
         # Optimize generated image
         grad = tape.gradient(loss, [self.gen_image])
@@ -280,11 +280,11 @@ class SCModel(tf.keras.Model):
             if isinstance(real_logits, list):
                 d_loss = 0
                 for rl, gl in zip(real_logits, gen_logits):
-                    d_loss += self.bce_loss(tf.ones_like(rl), rl) + self.bce_loss(tf.zeros_like(gl), gl)
+                    d_loss += tf.reduce_mean(self.bce_loss(tf.ones_like(rl), rl) + self.bce_loss(tf.zeros_like(gl), gl))
                 d_loss = tf.reduce_sum(d_loss)
             else:
-                real_loss = self.bce_loss(tf.ones_like(real_logits), real_logits)
-                gen_loss = self.bce_loss(tf.zeros_like(gen_logits), gen_logits)
+                real_loss = tf.reduce_mean(self.bce_loss(tf.ones_like(real_logits), real_logits))
+                gen_loss = tf.reduce_mean(self.bce_loss(tf.zeros_like(gen_logits), gen_logits))
                 d_loss = real_loss + gen_loss
         d_grads = tape.gradient(d_loss, self.discriminator.trainable_weights)
         return d_grads, self.discriminator.trainable_weights, {'d_loss': d_loss}
