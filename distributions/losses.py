@@ -1,31 +1,17 @@
 import tensorflow as tf
 from absl import flags
 
-from distributions import compute_wass_dist, compute_raw_m2_loss
+from distributions import compute_wass_dist, compute_raw_m2_loss, compute_covar_loss, compute_mean_loss
 
 FLAGS = flags.FLAGS
 
 
-def compute_covar_loss(y_true, y_pred):
-    mu1 = tf.reduce_mean(y_true, axis=[1, 2], keepdims=True)
-    mu2 = tf.reduce_mean(y_pred, axis=[1, 2], keepdims=True)
-    mean_loss = tf.squeeze((mu1 - mu2) ** 2, axis=[1, 2])
-    centered_y1 = y_true - mu1
-    centered_y2 = y_pred - mu2
-    covar_loss = compute_raw_m2_loss(centered_y1, centered_y2)
-    co_m2_loss = mean_loss + covar_loss
-    return co_m2_loss
-
-
-class FirstMomentLoss(tf.keras.losses.Loss):
+class M1Loss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
-        mu1 = tf.reduce_mean(y_true, axis=[1, 2], keepdims=True)
-        mu2 = tf.reduce_mean(y_pred, axis=[1, 2], keepdims=True)
-
-        return (mu1 - mu2) ** 2
+        return compute_mean_loss(y_true, y_pred)
 
 
-class SecondMomentLoss(tf.keras.losses.Loss):
+class M1M2Loss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
         mu1, var1 = tf.nn.moments(y_true, axes=[1, 2], keepdims=True)
         mu2, var2 = tf.nn.moments(y_pred, axes=[1, 2], keepdims=True)
@@ -33,9 +19,11 @@ class SecondMomentLoss(tf.keras.losses.Loss):
         return (mu1 - mu2) ** 2 + (var1 - var2) ** 2
 
 
-class CovarLoss(tf.keras.losses.Loss):
+class M1CovarLoss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
-        return compute_covar_loss(y_true, y_pred)
+        mean_loss = compute_mean_loss(y_true, y_pred)
+        covar_loss = compute_covar_loss(y_true, y_pred)
+        return mean_loss + covar_loss
 
 
 class GramianLoss(tf.keras.losses.Loss):
@@ -54,7 +42,7 @@ class ThirdMomentLoss(tf.keras.losses.Loss):
         skew1 = tf.reduce_mean(z1 ** 3, axis=[1, 2], keepdims=True)
         skew2 = tf.reduce_mean(z2 ** 3, axis=[1, 2], keepdims=True)
 
-        return (mu1 - mu2) ** 2 + (var1 - var2) ** 2 + (skew1 - skew2) ** 2
+        return tf.reduce_mean((mu1 - mu2) ** 2 + (var1 - var2) ** 2 + (skew1 - skew2) ** 2, axis=-1)
 
 
 class WassLoss(tf.keras.losses.Loss):
@@ -88,5 +76,5 @@ class CoWassLoss(tf.keras.losses.Loss):
 
 
 
-loss_dict = {'m1': FirstMomentLoss(), 'm2': SecondMomentLoss(), 'covar': CovarLoss(), 'gram': GramianLoss(),
+loss_dict = {'m1': M1Loss(), 'm1m2': M1M2Loss(), 'm1covar': M1CovarLoss(), 'gram': GramianLoss(),
              'm3': ThirdMomentLoss(), 'wass': WassLoss(), 'cowass': CoWassLoss(), None: []}
