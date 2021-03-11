@@ -144,7 +144,7 @@ class SCModel(tf.keras.Model):
     def __init__(self, feat_model, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.feat_model = feat_model
-        self.bce_loss = tf.keras.losses.BinaryCrossentropy(from_logits=True)
+        self.bce_loss = tf.keras.losses.BinaryCrossentropy(from_logits=True, reduction=tf.keras.losses.Reduction.SUM)
 
     def build(self, input_shape):
         if FLAGS.start_image == 'rand':
