@@ -31,7 +31,7 @@ class GramianLoss(tf.keras.losses.Loss):
         return compute_raw_m2_loss(y_true, y_pred)
 
 
-class ThirdMomentLoss(tf.keras.losses.Loss):
+class M1M2M3Loss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
         mu1, var1 = tf.nn.moments(y_true, axes=[1, 2], keepdims=True)
         mu2, var2 = tf.nn.moments(y_pred, axes=[1, 2], keepdims=True)
@@ -77,4 +77,4 @@ class CoWassLoss(tf.keras.losses.Loss):
 
 
 loss_dict = {'m1': M1Loss(), 'm1m2': M1M2Loss(), 'm1covar': M1CovarLoss(), 'gram': GramianLoss(),
-             'm3': ThirdMomentLoss(), 'wass': WassLoss(), 'cowass': CoWassLoss(), None: []}
+             'm1m2m3': M1M2M3Loss(), 'wass': WassLoss(), 'cowass': CoWassLoss(), None: []}
