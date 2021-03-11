@@ -230,10 +230,10 @@ class SCModel(tf.keras.Model):
             if hasattr(self, 'discriminator'):
                 d_logits = self.discriminator(gen_feats['style'], training=True)
                 if isinstance(d_logits, list):
-                    gen_loss = [tf.reduce_mean(logits) for logits in d_logits]
-                    gen_loss = tf.reduce_mean(gen_loss)
+                    gen_loss = [self.bce_loss(tf.ones_like(logits), logits) for logits in d_logits]
+                    gen_loss = tf.reduce_sum(gen_loss)
                 else:
-                    gen_loss = tf.reduce_mean(d_logits)
+                    gen_loss = self.bce_loss(tf.ones_like(d_logits), d_logits)
                 loss += gen_loss
         # Optimize generated image
         grad = tape.gradient(loss, [self.gen_image])
