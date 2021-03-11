@@ -111,7 +111,7 @@ def make_discriminator(feat_model):
     inputs, outputs = [], []
     for style_output in feat_model.output['style']:
         input_shape = style_output.shape[1:]
-        hdim = 256
+        hdim = max(64, 2 * input_shape[-1])
         if FLAGS.disc_model == 'fast':
             layer_disc = tf.keras.Sequential([
                 tfa.layers.SpectralNormalization(tf.keras.layers.Dense(1)),
