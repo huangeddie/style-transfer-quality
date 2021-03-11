@@ -126,6 +126,12 @@ def make_discriminator(feat_model):
                 tfa.layers.SpectralNormalization(tf.keras.layers.Dense(hdim)),
                 Scale(FLAGS.scale),
                 tf.keras.layers.ReLU(),
+                tfa.layers.SpectralNormalization(tf.keras.layers.Dense(hdim)),
+                Scale(FLAGS.scale),
+                tf.keras.layers.ReLU(),
+                tfa.layers.SpectralNormalization(tf.keras.layers.Dense(hdim)),
+                Scale(FLAGS.scale),
+                tf.keras.layers.ReLU(),
                 tfa.layers.SpectralNormalization(tf.keras.layers.Dense(1)),
                 Scale(FLAGS.scale),
             ])
