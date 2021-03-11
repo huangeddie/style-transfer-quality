@@ -16,6 +16,8 @@ FLAGS = flags.FLAGS
 flags.DEFINE_multi_enum('losses', [None], ['m1', 'm2', 'covar', 'gram', 'm3', 'wass', 'cowass', 'rpwass', None],
                         'type of loss to use')
 
+flags.DEFINE_bool('train_metrics', False, 'measure metrics during training')
+
 
 def main(argv):
     del argv  # Unused.
@@ -69,7 +71,7 @@ def main(argv):
 
         # Sanity evaluation
         logging.info('evaluating on projected features')
-        compile_sc_model(strategy, sc_model, loss_key, with_metrics=True)
+        compile_sc_model(strategy, sc_model, loss_key, with_metrics=FLAGS.train_metrics)
         sc_model.evaluate((style_image, content_image), feats_dict, batch_size=1, return_dict=True)
 
         # Save the images to disk
