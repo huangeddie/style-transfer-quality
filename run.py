@@ -67,17 +67,17 @@ def main(argv):
     callbacks = tf.keras.callbacks.CSVLogger(f'{loss_dir}/logs.csv')
     train(sc_model, style_image, content_image, feats_dict, callbacks)
 
-    # Sanity evaluation
-    logging.info('evaluating on projected features')
-    compile_sc_model(strategy, sc_model, FLAGS.loss, with_metrics=True)
-    sc_model.evaluate((style_image, content_image), feats_dict, batch_size=1, return_dict=True)
-
     # Save the images to disk
     gen_image = sc_model.get_gen_image()
     for filename, image in [('style.jpg', style_image), ('content.jpg', content_image),
                             (f'gen.jpg', gen_image)]:
         tf.keras.preprocessing.image.save_img(f'{loss_dir}/{filename}', tf.squeeze(image, 0))
     logging.info(f'images saved to {loss_dir}')
+
+    # Sanity evaluation
+    logging.info('evaluating on projected features')
+    compile_sc_model(strategy, sc_model, FLAGS.loss, with_metrics=True)
+    sc_model.evaluate((style_image, content_image), feats_dict, batch_size=1, return_dict=True)
 
     # Metrics
     logs_df = pd.read_csv(f'{loss_dir}/logs.csv')
