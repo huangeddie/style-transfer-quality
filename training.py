@@ -24,8 +24,7 @@ flags.DEFINE_float('epsilon', 1e-7, 'epsilon')
 def train(sc_model, style_image, content_image, feats_dict, callbacks):
     start_time = datetime.datetime.now()
     try:
-        bsz = sc_model.distribute_strategy.num_replicas_in_sync
-        history = sc_model.fit((style_image, content_image), feats_dict, epochs=FLAGS.train_steps, batch_size=bsz,
+        history = sc_model.fit((style_image, content_image), feats_dict, epochs=FLAGS.train_steps, batch_size=1,
                                verbose=FLAGS.verbose, callbacks=callbacks)
         for key, val in history.history.items():
             history.history[key] = val[-1]
