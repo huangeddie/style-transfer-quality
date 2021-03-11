@@ -13,7 +13,7 @@ from utils import plot_loss, log_feat_distribution, plot_layer_grams, setup, loa
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_enum('loss', None, ['m1', 'm2', 'covar', 'gram', 'm3', 'wass', 'cowass', 'rpwass'],
+flags.DEFINE_enum('loss', None, ['m1', 'm2', 'covar', 'gram', 'm3', 'wass', 'cowass'],
                   'type of loss to use')
 
 flags.DEFINE_bool('train_metrics', False, 'measure metrics during training')
