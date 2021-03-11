@@ -17,8 +17,9 @@ class MeanLoss(tf.keras.metrics.Metric):
         if sample_weight is not None:
             sample_weight = tf.cast(sample_weight, "float32")
             mean_loss = tf.multiply(mean_loss, sample_weight)
-
-        self.mean_loss.assign_add(tf.reduce_mean(mean_loss))
+        mean_loss = tf.reduce_mean(mean_loss)
+        if tf.math.is_finite(mean_loss):
+            self.mean_loss.assign_add(mean_loss)
 
     def result(self):
         return self.mean_loss
@@ -43,7 +44,9 @@ class VarLoss(tf.keras.metrics.Metric):
             sample_weight = tf.cast(sample_weight, "float32")
             var_loss = tf.multiply(var_loss, sample_weight)
 
-        self.var_loss.assign_add(tf.reduce_mean(var_loss))
+        var_loss = tf.reduce_mean(var_loss)
+        if tf.math.is_finite(var_loss):
+            self.var_loss.assign_add(var_loss)
 
     def result(self):
         return self.var_loss
@@ -72,7 +75,9 @@ class CovarLoss(tf.keras.metrics.Metric):
             sample_weight = tf.cast(sample_weight, "float32")
             covar_loss = tf.multiply(covar_loss, sample_weight)
 
-        self.covar_loss.assign_add(tf.reduce_mean(covar_loss))
+        covar_loss = tf.reduce_mean(covar_loss)
+        if tf.math.is_finite(covar_loss):
+            self.covar_loss.assign_add(covar_loss)
 
     def result(self):
         return self.covar_loss
@@ -95,7 +100,9 @@ class GramLoss(tf.keras.metrics.Metric):
             sample_weight = tf.cast(sample_weight, "float32")
             gram_loss = tf.multiply(gram_loss, sample_weight)
 
-        self.gram_loss.assign_add(tf.reduce_mean(gram_loss))
+        gram_loss = tf.reduce_mean(gram_loss)
+        if tf.math.is_finite(gram_loss):
+            self.gram_loss.assign_add(gram_loss)
 
     def result(self):
         return self.gram_loss
@@ -126,7 +133,9 @@ class SkewLoss(tf.keras.metrics.Metric):
             sample_weight = tf.cast(sample_weight, "float32")
             skew_loss = tf.multiply(skew_loss, sample_weight)
 
-        self.skew_loss.assign_add(tf.reduce_mean(skew_loss))
+        skew_loss = tf.reduce_mean(skew_loss)
+        if tf.math.is_finite(skew_loss):
+            self.skew_loss.assign_add(skew_loss)
 
     def result(self):
         return self.skew_loss
@@ -149,7 +158,9 @@ class WassDist(tf.keras.metrics.Metric):
             sample_weight = tf.cast(sample_weight, "float32")
             wass_dist = tf.multiply(wass_dist, sample_weight)
 
-        self.wass_dist.assign_add(tf.reduce_mean(wass_dist))
+        wass_dist = tf.reduce_mean(wass_dist)
+        if tf.math.is_finite(wass_dist):
+            self.wass_dist.assign_add(wass_dist)
 
     def result(self):
         return self.wass_dist
