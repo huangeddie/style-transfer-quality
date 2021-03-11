@@ -13,8 +13,8 @@ from utils import plot_loss, log_feat_distribution, plot_layer_grams, setup, loa
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_multi_enum('losses', [None], ['m1', 'm2', 'covar', 'gram', 'm3', 'wass', 'cowass', 'rpwass', None],
-                        'type of loss to use')
+flags.DEFINE_enum('loss', None, ['m1', 'm2', 'covar', 'gram', 'm3', 'wass', 'cowass', 'rpwass', None],
+                  'type of loss to use')
 
 flags.DEFINE_bool('train_metrics', False, 'measure metrics during training')
 
@@ -53,49 +53,47 @@ def main(argv):
     # Plot the gram matrices
     plot_layer_grams(raw_feats_dict, feats_dict, filepath='./out/gram.jpg')
 
-    # Run the transfer for each loss
-    for loss_key in FLAGS.losses:
-        # Make base dir
-        loss_dir = f'out/{loss_key}'
-        shutil.rmtree(loss_dir, ignore_errors=True)
-        os.mkdir(loss_dir)
+    # Make base dir
+    loss_dir = f'out/{FLAGS.loss}'
+    shutil.rmtree(loss_dir, ignore_errors=True)
+    os.mkdir(loss_dir)
 
-        # Reset gen image and recompile
-        sc_model.reinit_gen_image()
-        compile_sc_model(strategy, sc_model, loss_key, with_metrics=FLAGS.train_metrics)
+    # Reset gen image and recompile
+    sc_model.reinit_gen_image()
+    compile_sc_model(strategy, sc_model, FLAGS.loss, with_metrics=FLAGS.train_metrics)
 
-        # Style transfer
-        logging.info(f'loss function: {loss_key}')
-        callbacks = tf.keras.callbacks.CSVLogger(f'{loss_dir}/logs.csv')
-        train(sc_model, style_image, content_image, feats_dict, callbacks)
+    # Style transfer
+    logging.info(f'loss function: {FLAGS.loss}')
+    callbacks = tf.keras.callbacks.CSVLogger(f'{loss_dir}/logs.csv')
+    train(sc_model, style_image, content_image, feats_dict, callbacks)
 
-        # Sanity evaluation
-        logging.info('evaluating on projected features')
-        compile_sc_model(strategy, sc_model, loss_key, with_metrics=True)
-        sc_model.evaluate((style_image, content_image), feats_dict, batch_size=1, return_dict=True)
+    # Sanity evaluation
+    logging.info('evaluating on projected features')
+    compile_sc_model(strategy, sc_model, FLAGS.loss, with_metrics=True)
+    sc_model.evaluate((style_image, content_image), feats_dict, batch_size=1, return_dict=True)
 
-        # Save the images to disk
-        gen_image = sc_model.get_gen_image()
-        for filename, image in [('style.jpg', style_image), ('content.jpg', content_image),
-                                (f'gen.jpg', gen_image)]:
-            tf.keras.preprocessing.image.save_img(f'{loss_dir}/{filename}', tf.squeeze(image, 0))
-        logging.info(f'images saved to {loss_dir}')
+    # Save the images to disk
+    gen_image = sc_model.get_gen_image()
+    for filename, image in [('style.jpg', style_image), ('content.jpg', content_image),
+                            (f'gen.jpg', gen_image)]:
+        tf.keras.preprocessing.image.save_img(f'{loss_dir}/{filename}', tf.squeeze(image, 0))
+    logging.info(f'images saved to {loss_dir}')
 
-        # Metrics
-        logs_df = pd.read_csv(f'{loss_dir}/logs.csv')
+    # Metrics
+    logs_df = pd.read_csv(f'{loss_dir}/logs.csv')
 
-        logging.info('evaluating on raw features')
-        orig_feat_model = sc_model.feat_model
-        sc_model.feat_model = raw_feat_model
-        compile_sc_model(strategy, sc_model, loss_key, with_metrics=True)
-        raw_metrics = sc_model.evaluate((style_image, content_image), raw_feats_dict, batch_size=1, return_dict=True)
-        raw_metrics = pd.Series(raw_metrics)
-        for metric in ['_wass', '_mean', '_var', '_covar', '_gram', '_skew']:
-            raw_metrics.filter(like=metric).to_csv(f'{loss_dir}/raw_metrics.csv', mode='a')
-        sc_model.feat_model = orig_feat_model
+    logging.info('evaluating on raw features')
+    orig_feat_model = sc_model.feat_model
+    sc_model.feat_model = raw_feat_model
+    compile_sc_model(strategy, sc_model, FLAGS.loss, with_metrics=True)
+    raw_metrics = sc_model.evaluate((style_image, content_image), raw_feats_dict, batch_size=1, return_dict=True)
+    raw_metrics = pd.Series(raw_metrics)
+    for metric in ['_wass', '_mean', '_var', '_covar', '_gram', '_skew']:
+        raw_metrics.filter(like=metric).to_csv(f'{loss_dir}/raw_metrics.csv', mode='a')
+    sc_model.feat_model = orig_feat_model
 
-        plot_loss(logs_df, path=f'{loss_dir}/plots.jpg')
-        logging.info(f'metrics saved to {loss_dir}')
+    plot_loss(logs_df, path=f'{loss_dir}/plots.jpg')
+    logging.info(f'metrics saved to {loss_dir}')
 
 
 if __name__ == '__main__':
