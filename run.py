@@ -62,7 +62,7 @@ def main(argv):
 
         # Reset gen image and recompile
         sc_model.reinit_gen_image()
-        compile_sc_model(strategy, sc_model, loss_key, with_metrics=False)
+        compile_sc_model(strategy, sc_model, loss_key, with_metrics=FLAGS.train_metrics)
 
         # Style transfer
         logging.info(f'loss function: {loss_key}')
@@ -71,7 +71,7 @@ def main(argv):
 
         # Sanity evaluation
         logging.info('evaluating on projected features')
-        compile_sc_model(strategy, sc_model, loss_key, with_metrics=FLAGS.train_metrics)
+        compile_sc_model(strategy, sc_model, loss_key, with_metrics=True)
         sc_model.evaluate((style_image, content_image), feats_dict, batch_size=1, return_dict=True)
 
         # Save the images to disk
