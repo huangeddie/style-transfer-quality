@@ -12,6 +12,7 @@ flags.DEFINE_enum('start_image', 'rand', ['rand', 'black'], 'image size')
 flags.DEFINE_enum('feat_model', 'vgg19', ['vgg19', 'nasnetlarge', 'fast'], 'feature model architecture')
 flags.DEFINE_integer('layers', 5, 'number of layers to use from the feature model')
 flags.DEFINE_enum('disc_model', None, ['mlp', 'fast'], 'discriminator model architecture')
+flags.DEFINE_float('disc_scale', 1, 'discriminator layer scaling')
 
 flags.DEFINE_bool('shift', False, 'standardize outputs based on the style & content features')
 flags.DEFINE_bool('scale', False, 'standardize outputs based on the style & content features')
@@ -120,13 +121,13 @@ def make_discriminator(feat_model):
         elif FLAGS.disc_model == 'mlp':
             layer_disc = tf.keras.Sequential([
                 tfa.layers.SpectralNormalization(tf.keras.layers.Dense(hdim)),
-                Scale(2),
+                Scale(FLAGS.scale),
                 tf.keras.layers.ReLU(),
                 tfa.layers.SpectralNormalization(tf.keras.layers.Dense(hdim)),
-                Scale(2),
+                Scale(FLAGS.scale),
                 tf.keras.layers.ReLU(),
                 tfa.layers.SpectralNormalization(tf.keras.layers.Dense(1)),
-                Scale(2),
+                Scale(FLAGS.scale),
             ])
         else:
             raise ValueError(f'unknown discriminator model: {FLAGS.disc_model}')
