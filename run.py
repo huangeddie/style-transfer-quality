@@ -70,7 +70,8 @@ def main(argv):
     # Sanity evaluation
     logging.info('evaluating on projected features')
     compile_sc_model(strategy, sc_model, FLAGS.loss, with_metrics=True)
-    sc_model.evaluate((style_image, content_image), feats_dict, batch_size=1, return_dict=True)
+    sc_model.evaluate((style_image, content_image), feats_dict, batch_size=strategy.num_replicas_in_sync,
+                      return_dict=True)
 
     # Save the images to disk
     gen_image = sc_model.get_gen_image()
@@ -86,7 +87,8 @@ def main(argv):
     orig_feat_model = sc_model.feat_model
     sc_model.feat_model = raw_feat_model
     compile_sc_model(strategy, sc_model, FLAGS.loss, with_metrics=True)
-    raw_metrics = sc_model.evaluate((style_image, content_image), raw_feats_dict, batch_size=1, return_dict=True)
+    raw_metrics = sc_model.evaluate((style_image, content_image), raw_feats_dict,
+                                    batch_size=strategy.num_replicas_in_sync, return_dict=True)
     raw_metrics = pd.Series(raw_metrics)
     for metric in ['_wass', '_mean', '_var', '_covar', '_gram', '_skew']:
         raw_metrics.filter(like=metric).to_csv(f'{loss_dir}/raw_metrics.csv', mode='a')
