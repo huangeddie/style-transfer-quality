@@ -10,6 +10,7 @@ from distributions import losses, metrics
 FLAGS = flags.FLAGS
 
 flags.DEFINE_integer('train_steps', 100, 'train steps')
+flags.DEFINE_integer('steps_per_exec', None, 'steps per execution')
 flags.DEFINE_integer('cowass_warmup', 0, 'warmup steps for the CoWass loss')
 flags.DEFINE_integer('verbose', 0, 'verbosity')
 flags.DEFINE_bool('cosine_decay', False, 'cosine decay')
@@ -77,4 +78,4 @@ def compile_sc_model(strategy, sc_model, loss_key, with_metrics):
             metric_dict = None
 
         # Compile
-        sc_model.compile(optimizer, loss=loss_dict, metrics=metric_dict)
+        sc_model.compile(optimizer, loss=loss_dict, metrics=metric_dict, steps_per_execution=FLAGS.steps_per_exec)
