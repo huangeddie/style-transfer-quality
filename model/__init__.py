@@ -115,7 +115,7 @@ def make_discriminator(feat_model):
         if FLAGS.disc_model == 'fast':
             layer_disc = tf.keras.Sequential([
                 tfa.layers.SpectralNormalization(tf.keras.layers.Dense(1)),
-                Scale(2),
+                Scale(FLAGS.scale),
             ])
         elif FLAGS.disc_model == 'mlp':
             layer_disc = tf.keras.Sequential([
