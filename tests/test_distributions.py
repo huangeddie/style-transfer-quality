@@ -4,7 +4,7 @@ from absl.testing import absltest
 from scipy import stats
 
 from distributions import compute_wass_dist, compute_raw_m2_loss, compute_mean_loss, compute_var_loss, \
-    compute_covar_loss, compute_skew_loss
+    compute_covar_loss, compute_skew_loss, sample_k
 
 FLAGS = flags.FLAGS
 
@@ -36,6 +36,17 @@ class TestDistributions(absltest.TestCase):
 
             our_wass_dist = compute_wass_dist(y, x)
             tf.debugging.assert_near(true_batch_wass_dist, our_wass_dist)
+
+    def test_sampling(self):
+        x = tf.random.normal([1024, 2, 8])
+        sample_x1 = sample_k(x, None)
+        sample_x2 = sample_k(x, 256)
+        sample_x3 = sample_k(x, 2048)
+        tf.debugging.assert_shapes([
+            (sample_x1, [1024, 2, 8]),
+            (sample_x2, [256, 2, 8]),
+            (sample_x3, [1024, 2, 8]),
+        ])
 
 
 if __name__ == '__main__':
