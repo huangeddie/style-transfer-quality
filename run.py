@@ -45,7 +45,6 @@ def main(argv):
 
     # Make the dataset
     ds = make_dataset(strategy, (style_image, content_image), feats_dict)
-    logging.info(f'dataset: {ds}')
 
     # Log distribution statistics of the style image
     log_feat_distribution(raw_feats_dict, 'raw layer average style moments')
