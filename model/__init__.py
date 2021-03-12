@@ -3,7 +3,7 @@ import tensorflow_addons as tfa
 from absl import flags
 from absl import logging
 
-from distributions import preprocess_feats
+from distributions import process_spatial_feats
 from model.layers import Preprocess, Standardize, PCA, FastICA
 
 FLAGS = flags.FLAGS
@@ -205,10 +205,17 @@ class SCModel(tf.keras.Model):
     def call(self, inputs, training=None, mask=None):
         return self.feat_model((self.gen_image, self.gen_image), training=training)
 
+    def process_spatial_feats(self, feats, gen_feats, sample_size=None):
+        feats = {'style': [process_spatial_feats(f, sample_size) for f in feats['style']],
+                 'content': [process_spatial_feats(f, sample_size) for f in feats['content']]}
+        gen_feats = {'style': [process_spatial_feats(f, sample_size) for f in gen_feats['style']],
+                     'content': [process_spatial_feats(f, sample_size) for f in gen_feats['content']]}
+        return feats, gen_feats
+
     def test_step(self, data):
         images, feats = data
         gen_feats = self(images, training=False)
-        feats, gen_feats = self.process_feats(feats, gen_feats)
+        feats, gen_feats = self.process_spatial_feats(feats, gen_feats)
 
         # Updates stateful loss metrics.
         self.compiled_loss(
@@ -243,7 +250,7 @@ class SCModel(tf.keras.Model):
             gen_feats = self(images, training=False)
 
             # Process the feats
-            feats, gen_feats = self.process_feats(feats, gen_feats, self.sample_size)
+            feats, gen_feats = self.process_spatial_feats(feats, gen_feats, self.sample_size)
             loss = self.compiled_loss(feats, gen_feats, regularization_losses=self.losses)
 
             # Add discriminator loss if any
@@ -262,16 +269,9 @@ class SCModel(tf.keras.Model):
         self.compiled_metrics.update_state(feats, gen_feats)
         return grad, [self.gen_image]
 
-    def process_feats(self, feats, gen_feats, sample_size=None):
-        feats = {'style': [preprocess_feats(f, sample_size) for f in feats['style']],
-                 'content': [preprocess_feats(f, sample_size) for f in feats['content']]}
-        gen_feats = {'style': [preprocess_feats(f, sample_size) for f in gen_feats['style']],
-                     'content': [preprocess_feats(f, sample_size) for f in gen_feats['content']]}
-        return feats, gen_feats
-
     def disc_step(self, images, feats):
         gen_feats = self(images, training=False)
-        feats, gen_feats = self.process_feats(feats, gen_feats, self.sample_size)
+        feats, gen_feats = self.process_spatial_feats(feats, gen_feats, self.sample_size)
         with tf.GradientTape() as tape:
             real_logits = self.discriminator(feats['style'], training=True)
             gen_logits = self.discriminator(gen_feats['style'], training=True)

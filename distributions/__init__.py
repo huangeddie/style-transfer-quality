@@ -20,7 +20,7 @@ def flatten_spatial(x):
     return x
 
 
-def preprocess_feats(x, k):
+def process_spatial_feats(x, k):
     x = flatten_spatial(x)
     x = tf.transpose(x, [1, 0, 2])
     x = sample_k(x, k)
