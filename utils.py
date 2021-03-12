@@ -1,3 +1,6 @@
+import os
+import shutil
+
 import tensorflow as tf
 from absl import flags, logging
 from matplotlib import pyplot as plt
@@ -9,7 +12,7 @@ flags.DEFINE_string('style_image', None, 'path to the style image')
 flags.DEFINE_string('content_image', None, 'path to the content image')
 flags.DEFINE_integer('imsize', None, 'image size')
 
-flags.DEFINE_bool('tpu', False, 'whether or not to use a tpu')
+flags.DEFINE_enum('strategy', None, ['tpu', 'multi_cpu'], 'distributed strategy')
 flags.DEFINE_enum('policy', 'float32', ['float32', 'mixed_bfloat16'], 'floating point precision policy')
 
 # Required flag.
@@ -17,11 +20,18 @@ flags.mark_flag_as_required('style_image')
 
 
 def setup():
-    if FLAGS.tpu:
+    # Make base dir
+    loss_dir = f'out/{FLAGS.loss}'
+    shutil.rmtree(loss_dir, ignore_errors=True)
+    os.mkdir(loss_dir)
+
+    if FLAGS.strategy == 'tpu':
         resolver = tf.distribute.cluster_resolver.TPUClusterResolver()
         tf.config.experimental_connect_to_cluster(resolver)
         tf.tpu.experimental.initialize_tpu_system(resolver)
         strategy = tf.distribute.TPUStrategy(resolver)
+    elif FLAGS.strategy == 'multi_cpu':
+        strategy = tf.distribute.MirroredStrategy(['CPU:0', 'CPU:1'])
     else:
         strategy = tf.distribute.get_strategy()
 
@@ -29,7 +39,7 @@ def setup():
     policy = mixed_precision.Policy(FLAGS.policy)
     mixed_precision.set_global_policy(policy)
 
-    return strategy
+    return strategy, loss_dir
 
 
 def load_sc_images():

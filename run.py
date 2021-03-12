@@ -1,6 +1,3 @@
-import os
-import shutil
-
 import pandas as pd
 import tensorflow as tf
 from absl import app
@@ -8,7 +5,7 @@ from absl import flags
 from absl import logging
 
 import model as scm
-from training import train, compile_sc_model
+from training import train, compile_sc_model, make_dataset
 from utils import plot_loss, log_feat_distribution, plot_layer_grams, setup, load_sc_images
 
 FLAGS = flags.FLAGS
@@ -23,7 +20,7 @@ def main(argv):
     del argv  # Unused.
 
     # Setup
-    strategy = setup()
+    strategy, loss_dir = setup()
 
     # Load style/content image
     logging.info('loading images')
@@ -46,17 +43,16 @@ def main(argv):
     raw_feats_dict = raw_feat_model((style_image, content_image), training=False)
     feats_dict = sc_model.feat_model((style_image, content_image), training=False)
 
+    # Make the dataset
+    ds = make_dataset(strategy, (style_image, content_image), feats_dict)
+    logging.info(f'dataset: {ds}')
+
     # Log distribution statistics of the style image
     log_feat_distribution(raw_feats_dict, 'raw layer average style moments')
     log_feat_distribution(feats_dict, 'projected layer average style moments')
 
     # Plot the gram matrices
     plot_layer_grams(raw_feats_dict, feats_dict, filepath='./out/gram.jpg')
-
-    # Make base dir
-    loss_dir = f'out/{FLAGS.loss}'
-    shutil.rmtree(loss_dir, ignore_errors=True)
-    os.mkdir(loss_dir)
 
     # Reset gen image and recompile
     sc_model.reinit_gen_image()
@@ -65,7 +61,7 @@ def main(argv):
     # Style transfer
     logging.info(f'loss function: {FLAGS.loss}')
     callbacks = tf.keras.callbacks.CSVLogger(f'{loss_dir}/logs.csv')
-    train(sc_model, style_image, content_image, feats_dict, callbacks)
+    train(sc_model, ds, callbacks)
 
     # Save the images to disk
     gen_image = sc_model.get_gen_image()
@@ -77,7 +73,7 @@ def main(argv):
     # Sanity evaluation
     logging.info('evaluating on projected features')
     compile_sc_model(strategy, sc_model, FLAGS.loss, with_metrics=True)
-    sc_model.evaluate((style_image, content_image), feats_dict, batch_size=1, return_dict=True)
+    sc_model.evaluate(ds, steps=1, return_dict=True)
 
     # Metrics
     logs_df = pd.read_csv(f'{loss_dir}/logs.csv')
@@ -86,7 +82,7 @@ def main(argv):
     orig_feat_model = sc_model.feat_model
     sc_model.feat_model = raw_feat_model
     compile_sc_model(strategy, sc_model, FLAGS.loss, with_metrics=True)
-    raw_metrics = sc_model.evaluate((style_image, content_image), raw_feats_dict, batch_size=1, return_dict=True)
+    raw_metrics = sc_model.evaluate(ds, steps=1, return_dict=True)
     raw_metrics = pd.Series(raw_metrics)
     for metric in ['_wass', '_mean', '_var', '_covar', '_gram', '_skew']:
         raw_metrics.filter(like=metric).to_csv(f'{loss_dir}/raw_metrics.csv', mode='a')

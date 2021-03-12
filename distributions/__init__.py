@@ -3,9 +3,6 @@ import tensorflow as tf
 
 def compute_wass_dist(y_true, y_pred, p=1):
     shape = tf.shape(y_pred)
-    tf.ensure_shape(y_true, y_pred.shape)
-    print([y_true.shape[i] for i in range(4)])
-    print([y_pred.shape[i] for i in range(4)])
     bsz, num_locs, channels = shape[0], shape[1] * shape[2], shape[3]
     y_true = tf.reshape(y_true, [bsz, num_locs, channels])
     y_pred = tf.reshape(y_pred, [bsz, num_locs, channels])

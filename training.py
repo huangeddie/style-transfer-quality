@@ -1,10 +1,10 @@
 import datetime
 
 import tensorflow as tf
+import tensorflow_addons as tfa
 from absl import flags
 from absl import logging
 
-import tensorflow_addons as tfa
 from distributions import losses, metrics
 
 FLAGS = flags.FLAGS
@@ -22,11 +22,28 @@ flags.DEFINE_float('beta2', 0.99, 'beta2')
 flags.DEFINE_float('epsilon', 1e-7, 'epsilon')
 
 
-def train(sc_model, style_image, content_image, feats_dict, callbacks):
+def make_dataset(strategy, images, feats_dict):
+    images_ds = tf.data.Dataset.from_tensor_slices(images)
+    style_feats = [tf.data.Dataset.from_tensor_slices(feats) for feats in feats_dict['style']]
+    style_feats = tuple(style_feats)
+    style_ds = tf.data.Dataset.zip(style_feats)
+
+    content_feats = [tf.data.Dataset.from_tensor_slices(feats) for feats in feats_dict['content']]
+    content_feats = tuple(content_feats)
+    content_ds = tf.data.Dataset.zip(content_feats)
+
+    feats_ds = tf.data.Dataset.zip((style_ds, content_ds))
+    feats_ds = feats_ds.map(lambda x, y: {'style': x, 'content': y})
+    ds = tf.data.Dataset.zip((images_ds, feats_ds))
+    ds = ds.cache().repeat().batch(strategy.num_replicas_in_sync).prefetch(tf.data.AUTOTUNE)
+    dist_ds = strategy.experimental_distribute_dataset(ds)
+    return dist_ds
+
+
+def train(sc_model, ds, callbacks):
     start_time = datetime.datetime.now()
     try:
-        history = sc_model.fit((style_image, content_image), feats_dict, epochs=FLAGS.train_steps, batch_size=1,
-                               verbose=FLAGS.verbose, callbacks=callbacks)
+        history = sc_model.fit(ds, epochs=1, steps_per_epoch=FLAGS.train_steps, verbose=FLAGS.verbose, callbacks=callbacks)
         for key, val in history.history.items():
             history.history[key] = val[-1]
         logging.info(history.history)

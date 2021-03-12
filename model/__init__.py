@@ -1,7 +1,7 @@
 import tensorflow as tf
+import tensorflow_addons as tfa
 from absl import flags
 from absl import logging
-import tensorflow_addons as tfa
 
 from model.layers import Preprocess, Standardize, PCA, FastICA
 
@@ -21,6 +21,7 @@ flags.DEFINE_integer('pca', None, 'maximum dimension of features enforced with P
 flags.DEFINE_integer('ica', None, 'maximum dimension of features enforced with FastICa')
 flags.DEFINE_bool('whiten', False, 'whiten the components of PCA/ICA')
 
+
 class Scale(tf.keras.layers.Layer):
     def __init__(self, scale, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -28,6 +29,7 @@ class Scale(tf.keras.layers.Layer):
 
     def call(self, inputs, *args, **kwargs):
         return inputs * self.scale
+
 
 def make_feat_model(input_shape):
     style_input = tf.keras.Input(input_shape, name='style')
