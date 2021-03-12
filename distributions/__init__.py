@@ -4,12 +4,7 @@ import tensorflow as tf
 def sample_k(x, k):
     if k is not None:
         n = tf.shape(x)[0]
-        uniform_log_prob = tf.zeros([1, n])
-
-        ind = tf.random.categorical(uniform_log_prob, tf.minimum(k, n))
-        ind = tf.squeeze(ind, 0, name="random_choice_ind")  # (n_samples,)
-
-        return tf.gather(x, ind, name="random_choice")
+        return tf.gather(x, tf.random.shuffle(tf.range(n))[:tf.minimum(k, n)])
     return x
 
 
