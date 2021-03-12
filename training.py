@@ -10,7 +10,7 @@ from distributions import losses, metrics
 FLAGS = flags.FLAGS
 
 flags.DEFINE_integer('train_steps', 100, 'train steps')
-flags.DEFINE_integer('steps_per_exec', None, 'steps per execution')
+flags.DEFINE_integer('steps_exec', None, 'steps per execution')
 flags.DEFINE_integer('cowass_warmup', 0, 'warmup steps for the CoWass loss')
 flags.DEFINE_integer('verbose', 0, 'verbosity')
 flags.DEFINE_bool('cosine_decay', False, 'cosine decay')
@@ -44,8 +44,8 @@ def make_dataset(strategy, images, feats_dict):
 def train(sc_model, ds, callbacks):
     start_time = datetime.datetime.now()
     try:
-        history = sc_model.fit(ds, epochs=FLAGS.train_steps, steps_per_epoch=1, verbose=FLAGS.verbose,
-                               callbacks=callbacks)
+        history = sc_model.fit(ds, epochs=FLAGS.train_steps // (FLAGS.steps_exec or 1),
+                               steps_per_epoch=FLAGS.steps_exec, verbose=FLAGS.verbose, callbacks=callbacks)
         for key, val in history.history.items():
             history.history[key] = val[-1]
         logging.info(history.history)
@@ -97,4 +97,4 @@ def compile_sc_model(strategy, sc_model, loss_key, with_metrics):
             metric_dict = None
 
         # Compile
-        sc_model.compile(optimizer, loss=loss_dict, metrics=metric_dict, steps_per_execution=FLAGS.steps_per_exec)
+        sc_model.compile(optimizer, loss=loss_dict, metrics=metric_dict, steps_per_execution=FLAGS.steps_exec)
