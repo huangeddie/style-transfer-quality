@@ -43,7 +43,8 @@ def make_dataset(strategy, images, feats_dict):
 def train(sc_model, ds, callbacks):
     start_time = datetime.datetime.now()
     try:
-        history = sc_model.fit(ds, epochs=1, steps_per_epoch=FLAGS.train_steps, verbose=FLAGS.verbose, callbacks=callbacks)
+        history = sc_model.fit(ds, epochs=1, steps_per_epoch=FLAGS.train_steps, verbose=FLAGS.verbose,
+                               callbacks=callbacks)
         for key, val in history.history.items():
             history.history[key] = val[-1]
         logging.info(history.history)
@@ -87,7 +88,7 @@ def compile_sc_model(strategy, sc_model, loss_key, with_metrics):
         # Metrics?
         if with_metrics:
             metric_dict = {'style': [
-                [metrics.MeanLoss(), metrics.VarLoss(), metrics.CovarLoss(), metrics.SkewLoss(),
+                [metrics.WassDist(), metrics.MeanLoss(), metrics.VarLoss(), metrics.CovarLoss(), metrics.SkewLoss(),
                  metrics.GramLoss()]
                 for _ in sc_model.feat_model.output['style']],
                 'content': [[] for _ in sc_model.feat_model.output['content']]}
