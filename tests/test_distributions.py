@@ -30,8 +30,9 @@ class TestDistributions(absltest.TestCase):
                 for j in range(8):
                     true_feat_wass_dist.append(
                         stats.wasserstein_distance(x[i, :, :, j].numpy().flatten(), y[i, :, :, j].numpy().flatten()))
-                true_batch_wass_dist.append(true_feat_wass_dist)
-            true_batch_wass_dist = tf.constant(true_batch_wass_dist, dtype=tf.float32)
+                true_batch_wass_dist.append(tf.reduce_mean(true_feat_wass_dist))
+            true_batch_wass_dist = tf.concat(true_batch_wass_dist, axis=0)
+            true_batch_wass_dist = tf.cast(true_batch_wass_dist, tf.float32)
 
             our_wass_dist = compute_wass_dist(y, x)
             tf.debugging.assert_near(true_batch_wass_dist, our_wass_dist)

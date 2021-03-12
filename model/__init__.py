@@ -155,7 +155,8 @@ class SCModel(tf.keras.Model):
             assert FLAGS.start_image == 'black'
             initializer = tf.keras.initializers.Zeros()
         logging.info(f'initialzed gen image with {initializer.__class__.__name__}')
-        self.gen_image = self.add_weight('gen_image', input_shape[0], initializer=initializer)
+        shape = input_shape[0]
+        self.gen_image = self.add_weight('gen_image', shape, initializer=initializer)
 
     def configure(self, style_image, content_image):
         feat_model = self.feat_model

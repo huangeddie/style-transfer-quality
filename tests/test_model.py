@@ -2,8 +2,8 @@ import tensorflow as tf
 from absl import flags
 from absl.testing import absltest
 
+import model as scm
 import model.layers
-from model import style_content_model as scm
 
 FLAGS = flags.FLAGS
 
@@ -13,21 +13,24 @@ class TestModel(absltest.TestCase):
         FLAGS(['', '--feat_model=fast'])
         feat_model = scm.make_feat_model([32, 32, 3])
         sc_model = scm.SCModel(feat_model)
+        sc_model.compile('adam',
+                         loss={'style': [tf.keras.losses.MeanSquaredError(), tf.keras.losses.MeanSquaredError()]})
         # Random uniform doesn't support uint8
         x = tf.random.uniform([1, 32, 32, 3], maxval=255, dtype=tf.int32)
         y = tf.random.uniform([1, 32, 32, 3], maxval=255, dtype=tf.int32)
-        metrics = sc_model.train_step((x, y))
+        feats = {'style': [tf.random.uniform([1, 16, 16, 3]), tf.random.uniform([1, 8, 8, 3])],
+                 'content': [tf.random.uniform([1, 16, 16, 3]), tf.random.uniform([1, 8, 8, 3])]}
+        metrics = sc_model.train_step(((x, y), feats))
         self.assertIsInstance(metrics, dict)
 
     def test_model_call(self):
-        FLAGS(['', '--feat_model=fast'])
+        FLAGS(['', '--feat_model=fast', '--style_image=out/starry_night.jpg'])
         feat_model = scm.make_feat_model([32, 32, 3])
         sc_model = scm.SCModel(feat_model)
         # Random uniform doesn't support uint8
         x = tf.random.uniform([1, 32, 32, 3], maxval=255, dtype=tf.int32)
         y = tf.random.uniform([1, 32, 32, 3], maxval=255, dtype=tf.int32)
-        output = sc_model((x, y))
-        print(output)
+        _ = sc_model((x, y))
 
     def test_pca_einsum(self):
         for _ in range(100):
@@ -44,7 +47,7 @@ class TestModel(absltest.TestCase):
     def test_pca_constant(self):
         foo = tf.keras.Sequential([model.layers.PCA(2)])
         out = foo(tf.random.normal([32, 16, 16, 4]))
-        tf.debugging.assert_shapes([(out, [32, 16, 16, 2])])
+        tf.debugging.assert_shapes([(out, [32, 16, 16, 6])])
         self.assertEqual(len(foo.trainable_weights), 0)
         foo.trainable = True
         self.assertEqual(len(foo.trainable_weights), 0)

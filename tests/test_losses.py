@@ -2,7 +2,7 @@ import tensorflow as tf
 from absl import flags
 from absl.testing import absltest
 
-from distributions.losses import CoWassLoss, RandPairWassLoss
+from distributions.losses import CoWassLoss
 
 FLAGS = flags.FLAGS
 
@@ -37,13 +37,6 @@ class TestLosses(absltest.TestCase):
         # Initial alpha value should be 0
         alpha = cowass.get_alpha()
         tf.debugging.assert_equal(tf.ones_like(alpha), alpha)
-
-    def test_rand_pair_wass(self):
-        rp_wass = RandPairWassLoss()
-
-        x = tf.random.normal([2, 32, 32, 8])
-        y = tf.random.normal([2, 32, 32, 8])
-        _ = rp_wass(x, y)
 
 
 if __name__ == '__main__':
