@@ -17,8 +17,8 @@ class TestLosses(absltest.TestCase):
         tf.debugging.assert_equal(tf.zeros_like(alpha), alpha)
 
         # Linear warmup to 1
-        x = tf.random.normal([1024, 2, 8])
-        y = tf.random.normal([1024, 2, 8])
+        x = tf.random.normal([2, 1024, 8])
+        y = tf.random.normal([2, 1024, 8])
         _ = cowass(x, y)
 
         alpha = cowass.get_alpha()

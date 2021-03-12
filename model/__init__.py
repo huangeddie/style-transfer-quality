@@ -14,6 +14,7 @@ flags.DEFINE_enum('feat_model', 'vgg19', ['vgg19', 'nasnetlarge', 'fast'], 'feat
 flags.DEFINE_integer('layers', 5, 'number of layers to use from the feature model')
 flags.DEFINE_enum('disc_model', None, ['mlp', 'fast'], 'discriminator model architecture')
 flags.DEFINE_float('disc_scale', 1, 'discriminator layer scaling')
+flags.DEFINE_float('disc_lr', 1e-2, 'discriminator learning rate')
 
 flags.DEFINE_bool('shift', False, 'standardize outputs based on the style & content features')
 flags.DEFINE_bool('scale', False, 'standardize outputs based on the style & content features')
@@ -114,7 +115,8 @@ def make_discriminator(feat_model):
     inputs, outputs = [], []
     for style_output in feat_model.output['style']:
         input_shape = style_output.shape[1:]
-        hdim = max(64, 2 * input_shape[-1])
+        feat_dim = input_shape[-1]
+        hdim = max(64, 2 * feat_dim)
         if FLAGS.disc_model == 'fast':
             layer_disc = tf.keras.Sequential([
                 tfa.layers.SpectralNormalization(tf.keras.layers.Dense(1)),
@@ -136,7 +138,7 @@ def make_discriminator(feat_model):
             ])
         else:
             raise ValueError(f'unknown discriminator model: {FLAGS.disc_model}')
-        input = tf.keras.Input(input_shape)
+        input = tf.keras.Input([input_shape[0] * input_shape[1], feat_dim])
         output = layer_disc(input)
         inputs.append(input)
         outputs.append(output)
@@ -197,7 +199,8 @@ class SCModel(tf.keras.Model):
         # Add discriminator if requested
         if FLAGS.disc_model is not None:
             self.discriminator = make_discriminator(self.feat_model)
-            logging.info('added discriminator')
+            self.disc_opt = tfa.optimizers.LAMB(FLAGS.disc_lr)
+            logging.info(f'added discriminator with optimizer: {self.disc_opt.__class__.__name__}({FLAGS.disc_lr})')
 
     def reinit_gen_image(self):
         self.gen_image.assign(tf.random.uniform(self.gen_image.shape, maxval=255, dtype=self.gen_image.dtype))
@@ -228,15 +231,12 @@ class SCModel(tf.keras.Model):
         images, feats = data
 
         # Train the discriminator
+        d_metrics = {}
         if hasattr(self, 'discriminator'):
-            d_grads, d_weights, d_metrics = self.disc_step(images, feats)
-        else:
-            d_grads, d_weights, d_metrics = [], [], {}
+            d_metrics = self.disc_step(images, feats)
 
         # Train the generated image
-        g_grads, g_weights = self.gen_step(images, feats)
-
-        self.optimizer.apply_gradients(zip(d_grads + g_grads, d_weights + g_weights))
+        self.gen_step(images, feats)
 
         # Clip to RGB range
         self.gen_image.assign(tf.clip_by_value(self.gen_image, 0, 255))
@@ -264,10 +264,10 @@ class SCModel(tf.keras.Model):
                 loss += gen_loss
         # Optimize generated image
         grad = tape.gradient(loss, [self.gen_image])
+        self.optimizer.apply_gradients(zip(grad, [self.gen_image]))
 
         # Update metrics
         self.compiled_metrics.update_state(feats, gen_feats)
-        return grad, [self.gen_image]
 
     def disc_step(self, images, feats):
         gen_feats = self(images, training=False)
@@ -285,7 +285,9 @@ class SCModel(tf.keras.Model):
                 gen_loss = tf.reduce_mean(self.bce_loss(tf.zeros_like(gen_logits), gen_logits))
                 d_loss = real_loss + gen_loss
         d_grads = tape.gradient(d_loss, self.discriminator.trainable_weights)
-        return d_grads, self.discriminator.trainable_weights, {'d_loss': d_loss}
+        self.disc_opt.apply_gradients(zip(d_grads, self.discriminator.trainable_weights))
+
+        return {'d_loss': d_loss}
 
     def get_gen_image(self):
         return tf.constant(tf.cast(self.gen_image, tf.uint8))

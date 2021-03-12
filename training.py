@@ -1,7 +1,6 @@
 import datetime
 
 import tensorflow as tf
-import tensorflow_addons as tfa
 from absl import flags
 from absl import logging
 
@@ -15,8 +14,7 @@ flags.DEFINE_integer('cowass_warmup', 0, 'warmup steps for the CoWass loss')
 flags.DEFINE_integer('verbose', 0, 'verbosity')
 flags.DEFINE_bool('cosine_decay', False, 'cosine decay')
 
-flags.DEFINE_enum('opt', 'lamb', ['adam', 'lamb'], 'optimizer')
-flags.DEFINE_float('lr', 1e-3, 'learning rate')
+flags.DEFINE_float('lr', 1, 'learning rate')
 flags.DEFINE_float('beta1', 0.9, 'beta1')
 flags.DEFINE_float('beta2', 0.99, 'beta2')
 flags.DEFINE_float('epsilon', 1e-7, 'epsilon')
@@ -78,13 +76,8 @@ def compile_sc_model(strategy, sc_model, loss_key, with_metrics):
         else:
             lr_schedule = FLAGS.lr
 
-        if FLAGS.opt == 'adam':
-            optimizer = tf.keras.optimizers.Adam(lr_schedule, FLAGS.beta1, FLAGS.beta2, FLAGS.epsilon)
-        elif FLAGS.opt == 'lamb':
-            optimizer = tfa.optimizers.LAMB(lr_schedule, FLAGS.beta1, FLAGS.beta2, FLAGS.epsilon)
-        else:
-            raise ValueError(f'unknown optimizer: {FLAGS.opt}')
-        logging.info(f'using the {optimizer.__class__.__name__} optimizer')
+        optimizer = tf.keras.optimizers.Adam(lr_schedule, FLAGS.beta1, FLAGS.beta2, FLAGS.epsilon)
+        logging.info(f'gen optimizer: {optimizer.__class__.__name__}({lr_schedule})')
 
         # Metrics?
         if with_metrics:
