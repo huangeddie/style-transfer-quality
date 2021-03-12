@@ -35,7 +35,7 @@ def make_dataset(strategy, images, feats_dict):
     feats_ds = tf.data.Dataset.zip((style_ds, content_ds))
     feats_ds = feats_ds.map(lambda x, y: {'style': x, 'content': y})
     ds = tf.data.Dataset.zip((images_ds, feats_ds))
-    ds = ds.cache().repeat().batch(strategy.num_replicas_in_sync).prefetch(tf.data.AUTOTUNE)
+    ds = ds.cache().repeat().batch(strategy.num_replicas_in_sync, drop_remainder=True).prefetch(tf.data.AUTOTUNE)
     logging.info(f'dataset: {ds}')
     dist_ds = strategy.experimental_distribute_dataset(ds)
     return dist_ds
