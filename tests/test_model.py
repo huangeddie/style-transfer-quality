@@ -12,21 +12,23 @@ class TestModel(absltest.TestCase):
     def test_model_train_step(self):
         FLAGS(['', '--feat_model=fast'])
         feat_model = scm.make_feat_model([32, 32, 3])
-        sc_model = scm.SCModel(feat_model)
-        sc_model.compile('adam',
-                         loss={'style': [tf.keras.losses.MeanSquaredError(), tf.keras.losses.MeanSquaredError()]})
-        # Random uniform doesn't support uint8
-        x = tf.random.uniform([1, 32, 32, 3], maxval=255, dtype=tf.int32)
-        y = tf.random.uniform([1, 32, 32, 3], maxval=255, dtype=tf.int32)
-        feats = {'style': [tf.random.uniform([1, 16, 16, 3]), tf.random.uniform([1, 8, 8, 3])],
-                 'content': [tf.random.uniform([1, 16, 16, 3]), tf.random.uniform([1, 8, 8, 3])]}
-        metrics = sc_model.train_step(((x, y), feats))
-        self.assertIsInstance(metrics, dict)
+
+        for sample_size in [None, 64]:
+            sc_model = scm.SCModel(feat_model, sample_size=sample_size)
+            sc_model.compile('adam',
+                             loss={'style': [tf.keras.losses.MeanSquaredError(), tf.keras.losses.MeanSquaredError()]})
+            # Random uniform doesn't support uint8
+            x = tf.random.uniform([1, 32, 32, 3], maxval=255, dtype=tf.int32)
+            y = tf.random.uniform([1, 32, 32, 3], maxval=255, dtype=tf.int32)
+            feats = {'style': [tf.random.uniform([1, 16, 16, 3]), tf.random.uniform([1, 8, 8, 3])],
+                     'content': [tf.random.uniform([1, 16, 16, 3]), tf.random.uniform([1, 8, 8, 3])]}
+            metrics = sc_model.train_step(((x, y), feats))
+            self.assertIsInstance(metrics, dict)
 
     def test_model_call(self):
         FLAGS(['', '--feat_model=fast', '--style_image=out/starry_night.jpg'])
         feat_model = scm.make_feat_model([32, 32, 3])
-        sc_model = scm.SCModel(feat_model)
+        sc_model = scm.SCModel(feat_model, sample_size=None)
         # Random uniform doesn't support uint8
         x = tf.random.uniform([1, 32, 32, 3], maxval=255, dtype=tf.int32)
         y = tf.random.uniform([1, 32, 32, 3], maxval=255, dtype=tf.int32)

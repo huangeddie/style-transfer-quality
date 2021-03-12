@@ -3,6 +3,7 @@ import tensorflow_addons as tfa
 from absl import flags
 from absl import logging
 
+from distributions import preprocess_feats
 from model.layers import Preprocess, Standardize, PCA, FastICA
 
 FLAGS = flags.FLAGS
@@ -143,9 +144,10 @@ def make_discriminator(feat_model):
 
 
 class SCModel(tf.keras.Model):
-    def __init__(self, feat_model, *args, **kwargs):
+    def __init__(self, feat_model, sample_size, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.feat_model = feat_model
+        self.sample_size = sample_size
         self.bce_loss = tf.keras.losses.BinaryCrossentropy(from_logits=True, reduction=tf.keras.losses.Reduction.NONE)
 
     def build(self, input_shape):
@@ -203,6 +205,18 @@ class SCModel(tf.keras.Model):
     def call(self, inputs, training=None, mask=None):
         return self.feat_model((self.gen_image, self.gen_image), training=training)
 
+    def test_step(self, data):
+        images, feats = data
+        gen_feats = self(images, training=False)
+        feats, gen_feats = self.process_feats(feats, gen_feats)
+
+        # Updates stateful loss metrics.
+        self.compiled_loss(
+            feats, gen_feats, regularization_losses=self.losses)
+
+        self.compiled_metrics.update_state(feats, gen_feats)
+        return {m.name: m.result() for m in self.metrics}
+
     def train_step(self, data):
         images, feats = data
 
@@ -228,8 +242,8 @@ class SCModel(tf.keras.Model):
             # Compute generated features
             gen_feats = self(images, training=False)
 
-            # Compute the loss value
-            # (the loss function is configured in `compile()`)
+            # Process the feats
+            feats, gen_feats = self.process_feats(feats, gen_feats, self.sample_size)
             loss = self.compiled_loss(feats, gen_feats, regularization_losses=self.losses)
 
             # Add discriminator loss if any
@@ -248,35 +262,16 @@ class SCModel(tf.keras.Model):
         self.compiled_metrics.update_state(feats, gen_feats)
         return grad, [self.gen_image]
 
-    def gradient_penalty(self, all_real_feats, all_fake_feats):
-        """ Calculates the gradient penalty.
-
-        This loss is calculated on an interpolated image
-        and added to the discriminator loss.
-        """
-        # Get the interpolated image
-        all_interpolated = []
-        for real_feats, fake_feats in zip(all_real_feats, all_fake_feats):
-            shape = tf.shape(real_feats)
-            b, h, w, c = [shape[i] for i in range(4)]
-            alpha = tf.random.uniform([b, h, w, 1])
-            interpolated = alpha * real_feats + (1 - alpha) * fake_feats
-            all_interpolated.append(interpolated)
-
-        with tf.GradientTape() as gp_tape:
-            gp_tape.watch(all_interpolated)
-            # 1. Get the discriminator output for this interpolated image.
-            d_out = self.discriminator(all_interpolated, training=True)
-
-        # 2. Calculate the gradients w.r.t to this interpolated image.
-        grads = gp_tape.gradient(d_out, all_interpolated)
-        # 3. Calculate the norm of the gradients.
-        norms = [tf.norm(g, axis=-1) for g in grads]
-        gps = [tf.reduce_mean((n - 1) ** 2) for n in norms]
-        return tf.reduce_sum(gps), tf.reduce_mean([tf.reduce_mean(n) for n in norms])
+    def process_feats(self, feats, gen_feats, sample_size=None):
+        feats = {'style': [preprocess_feats(f, sample_size) for f in feats['style']],
+                 'content': [preprocess_feats(f, sample_size) for f in feats['content']]}
+        gen_feats = {'style': [preprocess_feats(f, sample_size) for f in gen_feats['style']],
+                     'content': [preprocess_feats(f, sample_size) for f in gen_feats['content']]}
+        return feats, gen_feats
 
     def disc_step(self, images, feats):
         gen_feats = self(images, training=False)
+        feats, gen_feats = self.process_feats(feats, gen_feats, self.sample_size)
         with tf.GradientTape() as tape:
             real_logits = self.discriminator(feats['style'], training=True)
             gen_logits = self.discriminator(gen_feats['style'], training=True)

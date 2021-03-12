@@ -7,47 +7,41 @@ from distributions import compute_wass_dist, compute_raw_m2_loss, compute_covar_
 FLAGS = flags.FLAGS
 
 
-class SampleLoss(tf.keras.losses.Loss):
-    def __init__(self, k=None, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.k = k
-
-
-class NoOpLoss(SampleLoss):
+class NoOpLoss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
         return 0
 
 
-class M1Loss(SampleLoss):
+class M1Loss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
-        return compute_mean_loss(y_true, y_pred, self.k)
+        return compute_mean_loss(y_true, y_pred)
 
 
-class M1M2Loss(SampleLoss):
+class M1M2Loss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
-        mean_loss = compute_mean_loss(y_true, y_pred, self.k)
-        var_loss = compute_var_loss(y_true, y_pred, self.k)
+        mean_loss = compute_mean_loss(y_true, y_pred)
+        var_loss = compute_var_loss(y_true, y_pred)
         return mean_loss + var_loss
 
 
-class M1CovarLoss(SampleLoss):
+class M1CovarLoss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
-        mean_loss = compute_mean_loss(y_true, y_pred, self.k)
-        covar_loss = compute_covar_loss(y_true, y_pred, self.k)
+        mean_loss = compute_mean_loss(y_true, y_pred)
+        covar_loss = compute_covar_loss(y_true, y_pred)
         return mean_loss + covar_loss
 
 
-class GramianLoss(SampleLoss):
+class GramianLoss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
-        return compute_raw_m2_loss(y_true, y_pred, self.k)
+        return compute_raw_m2_loss(y_true, y_pred)
 
 
-class WassLoss(SampleLoss):
+class WassLoss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
-        return compute_wass_dist(y_true, y_pred, self.k, p=2)
+        return compute_wass_dist(y_true, y_pred, p=2)
 
 
-class CoWassLoss(SampleLoss):
+class CoWassLoss(tf.keras.losses.Loss):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.warmup_steps = tf.Variable(0, trainable=False, dtype=tf.float32)
@@ -62,8 +56,8 @@ class CoWassLoss(SampleLoss):
         return alpha
 
     def call(self, y_true, y_pred):
-        wass_loss = compute_wass_dist(y_true, y_pred, self.k, p=2)
-        covar_loss = compute_covar_loss(y_true, y_pred, self.k)
+        wass_loss = compute_wass_dist(y_true, y_pred, p=2)
+        covar_loss = compute_covar_loss(y_true, y_pred)
 
         alpha = self.get_alpha()
         loss = alpha * wass_loss + covar_loss

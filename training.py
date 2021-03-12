@@ -11,7 +11,6 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_integer('train_steps', 100, 'train steps')
 flags.DEFINE_integer('steps_exec', 1, 'steps per execution')
-flags.DEFINE_integer('sample_size', None, 'sample size of the features per layer')
 flags.DEFINE_integer('cowass_warmup', 0, 'warmup steps for the CoWass loss')
 flags.DEFINE_integer('verbose', 0, 'verbosity')
 flags.DEFINE_bool('cosine_decay', False, 'cosine decay')
@@ -60,9 +59,7 @@ def train(sc_model, ds, callbacks):
 def compile_sc_model(strategy, sc_model, loss_key, with_metrics):
     with strategy.scope():
         # Style loss
-        loss_dict = {
-            'style': [losses.loss_dict[loss_key](FLAGS.sample_size) for _ in sc_model.feat_model.output['style']]
-        }
+        loss_dict = {'style': [losses.loss_dict[loss_key]() for _ in sc_model.feat_model.output['style']]}
 
         # Content loss
         if FLAGS.content_image is not None:
