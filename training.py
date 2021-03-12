@@ -77,7 +77,7 @@ def compile_sc_model(strategy, sc_model, loss_key, with_metrics):
             lr_schedule = FLAGS.lr
 
         optimizer = tf.keras.optimizers.Adam(lr_schedule, FLAGS.beta1, FLAGS.beta2, FLAGS.epsilon)
-        logging.info(f'gen optimizer: {optimizer.__class__.__name__}({lr_schedule})')
+        logging.info(f'gen optimizer: {optimizer.__class__.__name__}({FLAGS.lr})')
 
         # Metrics?
         if with_metrics:
