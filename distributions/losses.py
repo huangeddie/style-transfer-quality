@@ -9,7 +9,7 @@ FLAGS = flags.FLAGS
 
 class NoOpLoss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
-        return 0
+        return tf.zeros(tf.shape(y_true)[0], dtype=y_true.dtype)
 
 
 class M1Loss(tf.keras.losses.Loss):
