@@ -146,11 +146,13 @@ def make_discriminator(feat_model):
 
 
 class SCModel(tf.keras.Model):
-    def __init__(self, feat_model, sample_size, *args, **kwargs):
+    def __init__(self, feat_model, sample_size, loss_warmup, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.feat_model = feat_model
         self.sample_size = sample_size
         self.bce_loss = tf.keras.losses.BinaryCrossentropy(from_logits=True, reduction=tf.keras.losses.Reduction.NONE)
+        self.loss_warmup = tf.Variable(loss_warmup, trainable=False, dtype=self.dtype)
+        self.curr_step = tf.Variable(0, trainable=False, dtype=self.dtype)
 
     def build(self, input_shape):
         if FLAGS.start_image == 'rand':
@@ -244,14 +246,23 @@ class SCModel(tf.keras.Model):
         # Return a dict mapping metric names to current value + the discriminator loss
         return {**{m.name: m.result() for m in self.metrics}, **d_metrics}
 
+    def get_loss_warmup_alpha(self):
+        alpha = tf.ones_like(self.curr_step / self.loss_warmup)
+        alpha = tf.cond(self.loss_warmup <= tf.zeros_like(self.loss_warmup),
+                        lambda: tf.ones_like(self.curr_step),
+                        lambda: tf.minimum(alpha, self.curr_step / self.loss_warmup))
+        return alpha
+
     def gen_step(self, images, feats):
+        alpha = self.get_loss_warmup_alpha()
+        self.curr_step.assign_add(tf.ones_like(self.curr_step))
         with tf.GradientTape() as tape:
             # Compute generated features
             gen_feats = self(images, training=False)
 
             # Process the feats
             feats, gen_feats = self.process_spatial_feats(feats, gen_feats, self.sample_size)
-            loss = self.compiled_loss(feats, gen_feats, regularization_losses=self.losses)
+            loss = alpha * self.compiled_loss(feats, gen_feats, regularization_losses=self.losses)
 
             # Add discriminator loss if any
             if hasattr(self, 'discriminator'):

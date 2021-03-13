@@ -34,7 +34,7 @@ class TestLosses(absltest.TestCase):
     def test_cowass_no_warmup(self):
         cowass = CoWassLoss()
 
-        # Initial alpha value should be 0
+        # Initial alpha value should be 1
         alpha = cowass.get_alpha()
         tf.debugging.assert_equal(tf.ones_like(alpha), alpha)
 

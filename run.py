@@ -12,6 +12,7 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_enum('loss', None, ['m1', 'm1m2', 'm1covar', 'gram', 'wass', 'cowass'],
                   'type of loss to use')
+flags.DEFINE_integer('loss_warmup', 0, 'linear loss warmup')
 flags.DEFINE_integer('sample_size', None, 'sample size of the features per layer')
 
 flags.DEFINE_bool('train_metrics', False, 'measure metrics during training')
@@ -32,7 +33,7 @@ def main(argv):
     image_shape = style_image.shape[1:]
     with strategy.scope():
         raw_feat_model = scm.make_feat_model(image_shape)
-        sc_model = scm.SCModel(raw_feat_model, FLAGS.sample_size)
+        sc_model = scm.SCModel(raw_feat_model, FLAGS.sample_size, FLAGS.loss_warmup)
 
         # Configure the model to the style and content images
         sc_model.configure(style_image, content_image)
