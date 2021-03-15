@@ -278,18 +278,25 @@ class SCModel(tf.keras.Model):
             real_logits = self.discriminator(feats['style'], training=True)
             gen_logits = self.discriminator(gen_feats['style'], training=True)
             if isinstance(real_logits, list):
-                d_loss = 0
+                d_loss, d_acc = 0, 0
                 for rl, gl in zip(real_logits, gen_logits):
                     d_loss += tf.reduce_mean(self.bce_loss(tf.ones_like(rl), rl) + self.bce_loss(tf.zeros_like(gl), gl))
+                    d_acc += tf.reduce_mean(tf.keras.metrics.binary_accuracy(tf.ones_like(rl), rl))
+                    d_acc += tf.reduce_mean(tf.keras.metrics.binary_accuracy(tf.zeros_like(gl), gl))
                 d_loss = tf.reduce_sum(d_loss)
+                d_acc /= (len(real_logits) * 2)
             else:
                 real_loss = tf.reduce_mean(self.bce_loss(tf.ones_like(real_logits), real_logits))
                 gen_loss = tf.reduce_mean(self.bce_loss(tf.zeros_like(gen_logits), gen_logits))
                 d_loss = real_loss + gen_loss
+                d_acc = (
+                        0.5 * tf.reduce_mean(tf.keras.metrics.binary_accuracy(tf.ones_like(real_logits), real_logits)) +
+                        0.5 * tf.reduce_mean(tf.keras.metrics.binary_accuracy(tf.zeros_like(gen_logits), gen_logits))
+                )
         d_grads = tape.gradient(d_loss, self.discriminator.trainable_weights)
         self.disc_opt.apply_gradients(zip(d_grads, self.discriminator.trainable_weights))
 
-        return {'d_loss': d_loss}
+        return {'d_loss': d_loss, 'd_acc': d_acc}
 
     def get_gen_image(self):
         return tf.constant(tf.cast(self.gen_image, tf.uint8))
