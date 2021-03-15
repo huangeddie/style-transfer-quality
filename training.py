@@ -14,8 +14,10 @@ FLAGS = flags.FLAGS
 flags.DEFINE_integer('train_steps', 100, 'train steps')
 flags.DEFINE_integer('steps_exec', 1, 'steps per execution')
 flags.DEFINE_integer('cowass_warmup', 0, 'warmup steps for the CoWass loss')
-flags.DEFINE_integer('verbose', 0, 'verbosity')
 flags.DEFINE_bool('cosine_decay', False, 'cosine decay')
+
+flags.DEFINE_integer('verbose', 0, 'verbosity')
+flags.DEFINE_bool('checkpoints', False, 'save transfer image every epoch')
 
 flags.DEFINE_float('disc_lr', 1e-2, 'discriminator learning rate')
 flags.DEFINE_float('gen_lr', 1, 'learning rate')
@@ -69,8 +71,11 @@ def train(sc_model, ds, out_dir):
     try:
         callbacks = [
             tf.keras.callbacks.CSVLogger(f'{out_dir}/logs.csv'),
-            TransferCheckpoint(out_dir)
         ]
+        if FLAGS.checkpoints:
+            callbacks.append(TransferCheckpoint(out_dir))
+            logging.info('saving checkpoints')
+
         history = sc_model.fit(ds, epochs=FLAGS.train_steps // FLAGS.steps_exec,
                                steps_per_epoch=FLAGS.steps_exec, verbose=FLAGS.verbose, callbacks=callbacks)
         for key, val in history.history.items():
