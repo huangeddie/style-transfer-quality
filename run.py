@@ -84,7 +84,7 @@ def main(argv):
     compile_sc_model(strategy, sc_model, FLAGS.loss, with_metrics=True)
     raw_metrics = sc_model.evaluate(ds, steps=1, return_dict=True)
     raw_metrics = pd.Series(raw_metrics)
-    for metric in ['_wass', '_mean', '_var', '_covar', '_gram', '_skew']:
+    for metric in ['_mean', '_var', '_covar', '_gram', '_skew', '_wass']:
         raw_metrics.filter(like=metric).to_csv(f'{loss_dir}/raw_metrics.csv', mode='a')
     sc_model.feat_model = orig_feat_model
 
