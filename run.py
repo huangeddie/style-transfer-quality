@@ -61,8 +61,7 @@ def main(argv):
 
     # Style transfer
     logging.info(f'loss function: {FLAGS.loss}')
-    callbacks = tf.keras.callbacks.CSVLogger(f'{loss_dir}/logs.csv')
-    train(sc_model, ds, callbacks)
+    train(sc_model, ds, loss_dir)
 
     # Save the images to disk
     gen_image = sc_model.get_gen_image()

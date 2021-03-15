@@ -1,4 +1,6 @@
 import datetime
+import os
+import shutil
 
 import tensorflow as tf
 from absl import flags
@@ -20,6 +22,27 @@ flags.DEFINE_float('beta2', 0.99, 'beta2')
 flags.DEFINE_float('epsilon', 1e-7, 'epsilon')
 
 
+class TransferCheckpoint(tf.keras.callbacks.Callback):
+    def __init__(self, out_dir, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.out_dir = out_dir
+        self.checkpoint_dir = os.path.join(self.out_dir, 'checkpoints')
+        if os.path.exists(self.checkpoint_dir):
+            shutil.rmtree(self.checkpoint_dir)
+            os.mkdir(self.checkpoint_dir)
+
+    def save_transfer(self, iteration):
+        image = tf.squeeze(self.model.gen_image, 0)
+        encoded_image = tf.io.encode_jpeg(tf.cast(image, tf.uint8))
+        tf.io.write_file(os.path.join(self.checkpoint_dir, f'{iteration:05d}.jpg'), encoded_image)
+
+    def on_train_begin(self, logs=None):
+        self.save_transfer(0)
+
+    def on_epoch_end(self, epoch, logs=None):
+        self.save_transfer(epoch)
+
+
 def make_dataset(strategy, images, feats_dict):
     images_ds = tf.data.Dataset.from_tensor_slices(images)
     style_feats = [tf.data.Dataset.from_tensor_slices(feats) for feats in feats_dict['style']]
@@ -39,9 +62,13 @@ def make_dataset(strategy, images, feats_dict):
     return dist_ds
 
 
-def train(sc_model, ds, callbacks):
+def train(sc_model, ds, out_dir):
     start_time = datetime.datetime.now()
     try:
+        callbacks = [
+            tf.keras.callbacks.CSVLogger(f'{out_dir}/logs.csv'),
+            TransferCheckpoint(out_dir)
+        ]
         history = sc_model.fit(ds, epochs=FLAGS.train_steps // FLAGS.steps_exec,
                                steps_per_epoch=FLAGS.steps_exec, verbose=FLAGS.verbose, callbacks=callbacks)
         for key, val in history.history.items():
