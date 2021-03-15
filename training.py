@@ -69,6 +69,7 @@ def train(sc_model, ds, out_dir):
     try:
         callbacks = [
             tf.keras.callbacks.CSVLogger(f'{out_dir}/logs.csv'),
+            TransferCheckpoint(out_dir)
         ]
         history = sc_model.fit(ds, epochs=FLAGS.train_steps // FLAGS.steps_exec,
                                steps_per_epoch=FLAGS.steps_exec, verbose=FLAGS.verbose, callbacks=callbacks)
