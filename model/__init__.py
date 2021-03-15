@@ -191,9 +191,9 @@ class SCModel(tf.keras.Model):
         super().compile(gen_opt, *args, **kwargs)
         self.disc_opt = disc_opt
         if self.disc_opt is not None:
-            logging.info(f'discriminator optimizer: {disc_opt.__class__.__name__}({self.disc_opt.lr})')
+            logging.info(f'discriminator optimizer: {disc_opt.__class__.__name__}')
         gen_opt = self.optimizer
-        logging.info(f'generator optimizer: {gen_opt.__class__.__name__}({gen_opt.lr})')
+        logging.info(f'generator optimizer: {gen_opt.__class__.__name__}')
 
     def reinit_gen_image(self):
         self.gen_image.assign(tf.random.uniform(self.gen_image.shape, maxval=255, dtype=self.gen_image.dtype))
