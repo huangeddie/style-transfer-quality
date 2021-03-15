@@ -82,10 +82,15 @@ def main(argv):
     orig_feat_model = sc_model.feat_model
     sc_model.feat_model = raw_feat_model
     compile_sc_model(strategy, sc_model, FLAGS.loss, with_metrics=True)
-    raw_metrics = sc_model.evaluate(ds, steps=1, return_dict=True)
-    raw_metrics = pd.Series(raw_metrics)
+    all_raw_metrics = sc_model.evaluate(ds, steps=1, return_dict=True)
+    all_raw_metrics = pd.Series(all_raw_metrics)
     for metric in ['_mean', '_var', '_covar', '_gram', '_skew', '_wass']:
-        raw_metrics.filter(like=metric).to_csv(f'{loss_dir}/raw_metrics.csv', mode='a')
+        raw_metrics = all_raw_metrics.filter(like=metric)
+        raw_metrics[f'total{metric}_loss'] = raw_metrics.sum()
+        filepath = f'{loss_dir}/raw_metrics.csv'
+        raw_metrics.to_csv(filepath, mode='a', header=False)
+        with open(filepath, mode='a') as f:
+            f.write('\n')
     sc_model.feat_model = orig_feat_model
 
     plot_loss(logs_df, path=f'{loss_dir}/plots.jpg')
