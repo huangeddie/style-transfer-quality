@@ -281,8 +281,8 @@ class SCModel(tf.keras.Model):
                 d_loss, d_acc = 0, 0
                 for rl, gl in zip(real_logits, gen_logits):
                     d_loss += tf.reduce_mean(self.bce_loss(tf.ones_like(rl), rl) + self.bce_loss(tf.zeros_like(gl), gl))
-                    d_acc += tf.reduce_mean(tf.keras.metrics.binary_accuracy(tf.ones_like(rl), rl))
-                    d_acc += tf.reduce_mean(tf.keras.metrics.binary_accuracy(tf.zeros_like(gl), gl))
+                    d_acc += tf.reduce_mean(tf.keras.metrics.binary_accuracy(tf.ones_like(rl), rl, threshold=0))
+                    d_acc += tf.reduce_mean(tf.keras.metrics.binary_accuracy(tf.zeros_like(gl), gl, threshold=0))
                 d_loss = tf.reduce_sum(d_loss)
                 d_acc /= (len(real_logits) * 2)
             else:
@@ -290,8 +290,10 @@ class SCModel(tf.keras.Model):
                 gen_loss = tf.reduce_mean(self.bce_loss(tf.zeros_like(gen_logits), gen_logits))
                 d_loss = real_loss + gen_loss
                 d_acc = (
-                        0.5 * tf.reduce_mean(tf.keras.metrics.binary_accuracy(tf.ones_like(real_logits), real_logits)) +
-                        0.5 * tf.reduce_mean(tf.keras.metrics.binary_accuracy(tf.zeros_like(gen_logits), gen_logits))
+                        0.5 * tf.reduce_mean(
+                    tf.keras.metrics.binary_accuracy(tf.ones_like(real_logits), real_logits, threshold=0)) +
+                        0.5 * tf.reduce_mean(
+                    tf.keras.metrics.binary_accuracy(tf.zeros_like(gen_logits), gen_logits, threshold=0))
                 )
         d_grads = tape.gradient(d_loss, self.discriminator.trainable_weights)
         self.disc_opt.apply_gradients(zip(d_grads, self.discriminator.trainable_weights))
