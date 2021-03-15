@@ -15,7 +15,7 @@ flags.DEFINE_enum('loss', None, ['m1', 'm1m2', 'm1covar', 'gram', 'wass', 'cowas
 flags.DEFINE_integer('loss_warmup', 0, 'linear loss warmup')
 flags.DEFINE_integer('sample_size', None, 'sample size of the features per layer')
 
-flags.DEFINE_bool('train_metrics', False, 'measure metrics during training')
+flags.DEFINE_bool('train_metrics', True, 'measure metrics during training')
 
 
 def main(argv):
