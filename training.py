@@ -3,6 +3,7 @@ import os
 import shutil
 
 import tensorflow as tf
+import tensorflow_addons as tfa
 from absl import flags
 from absl import logging
 
@@ -16,7 +17,8 @@ flags.DEFINE_integer('cowass_warmup', 0, 'warmup steps for the CoWass loss')
 flags.DEFINE_integer('verbose', 0, 'verbosity')
 flags.DEFINE_bool('cosine_decay', False, 'cosine decay')
 
-flags.DEFINE_float('lr', 1, 'learning rate')
+flags.DEFINE_float('disc_lr', 1e-2, 'discriminator learning rate')
+flags.DEFINE_float('gen_lr', 1, 'learning rate')
 flags.DEFINE_float('beta1', 0.9, 'beta1')
 flags.DEFINE_float('beta2', 0.99, 'beta2')
 flags.DEFINE_float('epsilon', 1e-7, 'epsilon')
@@ -98,13 +100,15 @@ def compile_sc_model(strategy, sc_model, loss_key, with_metrics):
 
         # Learning rate schedule
         if FLAGS.cosine_decay:
-            lr_schedule = tf.keras.experimental.CosineDecay(FLAGS.lr, FLAGS.train_steps)
-            logging.info(f'using cosine decay lr schedule with lr={FLAGS.lr}, train_steps={FLAGS.train_steps}')
+            disc_schedule = tf.keras.experimental.CosineDecay(FLAGS.disc_lr, FLAGS.train_steps)
+            gen_schedule = tf.keras.experimental.CosineDecay(FLAGS.gen_lr, FLAGS.train_steps)
+            logging.info(f'using cosine decay lr schedule')
         else:
-            lr_schedule = FLAGS.lr
+            disc_schedule = FLAGS.disc_lr
+            gen_schedule = FLAGS.gen_lr
 
-        optimizer = tf.keras.optimizers.Adam(lr_schedule, FLAGS.beta1, FLAGS.beta2, FLAGS.epsilon)
-        logging.info(f'gen optimizer: {optimizer.__class__.__name__}({FLAGS.lr})')
+        disc_opt = tfa.optimizers.LAMB(disc_schedule)
+        gen_opt = tf.keras.optimizers.Adam(gen_schedule, FLAGS.beta1, FLAGS.beta2, FLAGS.epsilon)
 
         # Metrics?
         if with_metrics:
@@ -117,4 +121,4 @@ def compile_sc_model(strategy, sc_model, loss_key, with_metrics):
             metric_dict = None
 
         # Compile
-        sc_model.compile(optimizer, loss=loss_dict, metrics=metric_dict, steps_per_execution=FLAGS.steps_exec)
+        sc_model.compile(disc_opt, gen_opt, loss=loss_dict, metrics=metric_dict, steps_per_execution=FLAGS.steps_exec)

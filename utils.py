@@ -15,9 +15,6 @@ flags.DEFINE_integer('imsize', None, 'image size')
 flags.DEFINE_enum('strategy', None, ['tpu', 'multi_cpu'], 'distributed strategy')
 flags.DEFINE_enum('policy', 'float32', ['float32', 'mixed_bfloat16'], 'floating point precision policy')
 
-# Required flag.
-flags.mark_flag_as_required('style_image')
-
 
 def setup():
     # Make base dir

@@ -15,7 +15,7 @@ class TestModel(absltest.TestCase):
 
         for sample_size in [None, 64]:
             sc_model = scm.SCModel(feat_model, sample_size=sample_size, loss_warmup=0)
-            sc_model.compile('adam',
+            sc_model.compile(None, 'adam',
                              loss={'style': [tf.keras.losses.MeanSquaredError(), tf.keras.losses.MeanSquaredError()]})
             # Random uniform doesn't support uint8
             x = tf.random.uniform([1, 32, 32, 3], maxval=255, dtype=tf.int32)
@@ -26,7 +26,7 @@ class TestModel(absltest.TestCase):
             self.assertIsInstance(metrics, dict)
 
     def test_model_call(self):
-        FLAGS(['', '--feat_model=fast', '--style_image=out/starry_night.jpg'])
+        FLAGS(['', '--feat_model=fast'])
         feat_model = scm.make_feat_model([32, 32, 3])
         sc_model = scm.SCModel(feat_model, sample_size=None, loss_warmup=0)
         # Random uniform doesn't support uint8
@@ -78,7 +78,7 @@ class TestModel(absltest.TestCase):
         FLAGS(['', '--feat_model=fast'])
         feat_model = scm.make_feat_model([32, 32, 3])
         sc_model = scm.SCModel(feat_model, sample_size=None, loss_warmup=100)
-        sc_model.compile('adam',
+        sc_model.compile(None, 'adam',
                          loss={'style': [tf.keras.losses.MeanSquaredError(), tf.keras.losses.MeanSquaredError()]})
 
         # Initial alpha value should be 0
@@ -106,7 +106,7 @@ class TestModel(absltest.TestCase):
         FLAGS(['', '--feat_model=fast'])
         feat_model = scm.make_feat_model([32, 32, 3])
         sc_model = scm.SCModel(feat_model, sample_size=None, loss_warmup=0)
-        sc_model.compile('adam',
+        sc_model.compile(None, 'adam',
                          loss={'style': [tf.keras.losses.MeanSquaredError(), tf.keras.losses.MeanSquaredError()]})
 
         # Initial alpha value should be 0

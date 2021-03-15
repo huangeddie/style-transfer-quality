@@ -13,8 +13,6 @@ flags.DEFINE_enum('start_image', 'rand', ['rand', 'black'], 'image size')
 flags.DEFINE_enum('feat_model', 'vgg19', ['vgg19', 'nasnetlarge', 'fast'], 'feature model architecture')
 flags.DEFINE_integer('layers', 5, 'number of layers to use from the feature model')
 flags.DEFINE_enum('disc_model', None, ['mlp', 'fast'], 'discriminator model architecture')
-flags.DEFINE_float('disc_scale', 1, 'discriminator layer scaling')
-flags.DEFINE_float('disc_lr', 1e-2, 'discriminator learning rate')
 
 flags.DEFINE_bool('shift', False, 'standardize outputs based on the style & content features')
 flags.DEFINE_bool('scale', False, 'standardize outputs based on the style & content features')
@@ -22,15 +20,6 @@ flags.DEFINE_bool('scale', False, 'standardize outputs based on the style & cont
 flags.DEFINE_integer('pca', None, 'maximum dimension of features enforced with PCA')
 flags.DEFINE_integer('ica', None, 'maximum dimension of features enforced with FastICa')
 flags.DEFINE_bool('whiten', False, 'whiten the components of PCA/ICA')
-
-
-class Scale(tf.keras.layers.Layer):
-    def __init__(self, scale, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.scale = tf.constant(scale, self.dtype)
-
-    def call(self, inputs, *args, **kwargs):
-        return inputs * self.scale
 
 
 def make_feat_model(input_shape):
@@ -120,21 +109,16 @@ def make_discriminator(feat_model):
         if FLAGS.disc_model == 'fast':
             layer_disc = tf.keras.Sequential([
                 tfa.layers.SpectralNormalization(tf.keras.layers.Dense(1)),
-                Scale(FLAGS.scale),
             ])
         elif FLAGS.disc_model == 'mlp':
             layer_disc = tf.keras.Sequential([
                 tfa.layers.SpectralNormalization(tf.keras.layers.Dense(hdim)),
-                Scale(FLAGS.scale),
                 tf.keras.layers.ReLU(),
                 tfa.layers.SpectralNormalization(tf.keras.layers.Dense(hdim)),
-                Scale(FLAGS.scale),
                 tf.keras.layers.ReLU(),
                 tfa.layers.SpectralNormalization(tf.keras.layers.Dense(hdim)),
-                Scale(FLAGS.scale),
                 tf.keras.layers.ReLU(),
                 tfa.layers.SpectralNormalization(tf.keras.layers.Dense(1)),
-                Scale(FLAGS.scale),
             ])
         else:
             raise ValueError(f'unknown discriminator model: {FLAGS.disc_model}')
@@ -201,8 +185,15 @@ class SCModel(tf.keras.Model):
         # Add discriminator if requested
         if FLAGS.disc_model is not None:
             self.discriminator = make_discriminator(self.feat_model)
-            self.disc_opt = tfa.optimizers.LAMB(FLAGS.disc_lr)
-            logging.info(f'added discriminator with optimizer: {self.disc_opt.__class__.__name__}({FLAGS.disc_lr})')
+            logging.info(f'added discriminator')
+
+    def compile(self, disc_opt, gen_opt, *args, **kwargs):
+        super().compile(gen_opt, *args, **kwargs)
+        self.disc_opt = disc_opt
+        if self.disc_opt is not None:
+            logging.info(f'discriminator optimizer: {disc_opt.__class__.__name__}({self.disc_opt.lr})')
+        gen_opt = self.optimizer
+        logging.info(f'generator optimizer: {gen_opt.__class__.__name__}({gen_opt.lr})')
 
     def reinit_gen_image(self):
         self.gen_image.assign(tf.random.uniform(self.gen_image.shape, maxval=255, dtype=self.gen_image.dtype))
