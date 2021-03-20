@@ -18,7 +18,7 @@ flags.DEFINE_enum('policy', 'float32', ['float32', 'mixed_bfloat16'], 'floating 
 
 def setup():
     # Make base dir
-    loss_dir = f'out/{FLAGS.loss}'
+    loss_dir = f'out/{FLAGS.loss}-{FLAGS.disc_model}'
     shutil.rmtree(loss_dir, ignore_errors=True)
     os.mkdir(loss_dir)
 
