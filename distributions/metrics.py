@@ -1,8 +1,10 @@
+from functools import partial
+
 import tensorflow_addons as tfa
 
 from distributions import compute_mean_loss, compute_var_loss, \
     compute_covar_loss, compute_raw_m2_loss, compute_skew_loss, compute_wass_dist
-from functools import partial
+
 
 class MeanLoss(tfa.metrics.MeanMetricWrapper):
     def __init__(self, name="mean_loss", **kwargs):

@@ -25,10 +25,12 @@ def sample_k(x, k):
         x = tf.transpose(x, [1, 0, 2])
     return x
 
+
 def process_spatial_feats(x, k):
     x = _flatten_spatial(x)
     x = sample_k(x, k)
     return x
+
 
 def compute_wass_dist(y_true, y_pred, p):
     y, x = tf.sort(y_true, axis=1), tf.sort(y_pred, axis=1)

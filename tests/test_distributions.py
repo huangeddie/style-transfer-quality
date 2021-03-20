@@ -19,6 +19,15 @@ class TestDistributions(absltest.TestCase):
             z = fn(x, y, p=1)
             tf.debugging.assert_shapes([(z, [2])], message=str(fn))
 
+    def test_p_norm(self):
+        x = tf.zeros([2, 1024, 8])
+        y = 2 * tf.ones([2, 1024, 8])
+        for fn in [compute_wass_dist, compute_raw_m2_loss, compute_mean_loss, compute_var_loss,
+                   compute_covar_loss, compute_skew_loss]:
+            z1 = fn(x, y, p=1)
+            z2 = fn(x, y, p=2)
+            tf.debugging.assert_equal(z1 ** 2, z2, message=fn.__name__)
+
     def test_wass_dist(self):
         for _ in range(100):
             x = tf.random.normal([2, 1024, 8])
