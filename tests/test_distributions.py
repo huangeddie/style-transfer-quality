@@ -16,7 +16,7 @@ class TestDistributions(absltest.TestCase):
 
         for fn in [compute_wass_dist, compute_raw_m2_loss, compute_mean_loss, compute_var_loss,
                    compute_covar_loss, compute_skew_loss]:
-            z = fn(x, y)
+            z = fn(x, y, p=1)
             tf.debugging.assert_shapes([(z, [2])], message=str(fn))
 
     def test_wass_dist(self):
@@ -34,7 +34,7 @@ class TestDistributions(absltest.TestCase):
             true_batch_wass_dist = tf.concat(true_batch_wass_dist, axis=0)
             true_batch_wass_dist = tf.cast(true_batch_wass_dist, tf.float32)
 
-            our_wass_dist = compute_wass_dist(y, x)
+            our_wass_dist = compute_wass_dist(y, x, p=1)
             tf.debugging.assert_near(true_batch_wass_dist, our_wass_dist)
 
     def test_sampling(self):

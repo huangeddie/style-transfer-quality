@@ -14,26 +14,26 @@ class NoOpLoss(tf.keras.losses.Loss):
 
 class M1Loss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
-        return compute_mean_loss(y_true, y_pred)
+        return compute_mean_loss(y_true, y_pred, p=2)
 
 
 class M1M2Loss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
-        mean_loss = compute_mean_loss(y_true, y_pred)
-        var_loss = compute_var_loss(y_true, y_pred)
+        mean_loss = compute_mean_loss(y_true, y_pred, p=2)
+        var_loss = compute_var_loss(y_true, y_pred, p=2)
         return mean_loss + var_loss
 
 
 class M1CovarLoss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
-        mean_loss = compute_mean_loss(y_true, y_pred)
-        covar_loss = compute_covar_loss(y_true, y_pred)
+        mean_loss = compute_mean_loss(y_true, y_pred, p=2)
+        covar_loss = compute_covar_loss(y_true, y_pred, p=2)
         return mean_loss + covar_loss
 
 
 class GramianLoss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
-        return compute_raw_m2_loss(y_true, y_pred)
+        return compute_raw_m2_loss(y_true, y_pred, p=2)
 
 
 class WassLoss(tf.keras.losses.Loss):
@@ -56,7 +56,7 @@ class CoWassLoss(tf.keras.losses.Loss):
 
     def call(self, y_true, y_pred):
         wass_loss = compute_wass_dist(y_true, y_pred, p=2)
-        covar_loss = compute_covar_loss(y_true, y_pred)
+        covar_loss = compute_covar_loss(y_true, y_pred, p=2)
 
         alpha = self.get_alpha()
         loss = alpha * wass_loss + covar_loss
