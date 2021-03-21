@@ -66,7 +66,7 @@ def main(argv):
     # Save the images to disk
     gen_image = sc_model.get_gen_image()
     for filename, image in [('style.jpg', style_image), ('content.jpg', content_image),
-                            (f'gen.jpg', gen_image)]:
+                            (f'{FLAGS.loss}.jpg', gen_image)]:
         tf.keras.preprocessing.image.save_img(f'{loss_dir}/{filename}', tf.squeeze(image, 0))
     logging.info(f'images saved to {loss_dir}')
 
