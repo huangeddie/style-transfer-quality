@@ -10,8 +10,8 @@ from utils import plot_loss, log_feat_distribution, plot_layer_grams, setup, loa
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_enum('loss', None, ['m1', 'm1m2', 'm1covar', 'gram', 'wass', 'cowass'],
-                  'type of loss to use')
+flags.DEFINE_enum('loss', None, ['m1', 'm1_m2', 'm1_covar', 'raw_m2', 'wass'],
+                  'type of statistical loss to use (optional)')
 flags.DEFINE_integer('loss_warmup', 0, 'linear loss warmup')
 flags.DEFINE_integer('sample_size', None, 'sample size of the features per layer')
 
