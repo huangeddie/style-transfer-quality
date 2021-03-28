@@ -3,7 +3,7 @@ from absl import flags
 from absl.testing import absltest
 from scipy import stats
 
-from distributions import compute_wass_dist, compute_raw_m2_loss, compute_mean_loss, compute_var_loss, \
+from distributions import compute_wass_dist, compute_co_raw_m2_loss, compute_mean_loss, compute_var_loss, \
     compute_covar_loss, compute_skew_loss, sample_k
 
 FLAGS = flags.FLAGS
@@ -14,7 +14,7 @@ class TestDistributions(absltest.TestCase):
         x = tf.random.normal([2, 1024, 8])
         y = tf.random.normal([2, 1024, 8])
 
-        for fn in [compute_wass_dist, compute_raw_m2_loss, compute_mean_loss, compute_var_loss,
+        for fn in [compute_wass_dist, compute_co_raw_m2_loss, compute_mean_loss, compute_var_loss,
                    compute_covar_loss, compute_skew_loss]:
             z = fn(x, y, p=1)
             tf.debugging.assert_shapes([(z, [2])], message=str(fn))
@@ -22,7 +22,7 @@ class TestDistributions(absltest.TestCase):
     def test_p_norm(self):
         x = tf.zeros([2, 1024, 8])
         y = 2 * tf.ones([2, 1024, 8])
-        for fn in [compute_wass_dist, compute_raw_m2_loss, compute_mean_loss, compute_var_loss,
+        for fn in [compute_wass_dist, compute_co_raw_m2_loss, compute_mean_loss, compute_var_loss,
                    compute_covar_loss, compute_skew_loss]:
             z1 = fn(x, y, p=1)
             z2 = fn(x, y, p=2)

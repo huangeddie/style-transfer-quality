@@ -47,7 +47,7 @@ def compute_mean_loss(y_true, y_pred, p):
     return mean_loss
 
 
-def compute_raw_m2_loss(y_true, y_pred, p):
+def compute_co_raw_m2_loss(y_true, y_pred, p):
     shape = tf.shape(y_true)
     num_locs = tf.cast(shape[1], y_true.dtype)
     raw_m2_1 = tf.einsum('bnc,bnd->bcd', y_true, y_true) / num_locs
@@ -71,7 +71,7 @@ def compute_covar_loss(y_true, y_pred, p):
     mu2 = tf.reduce_mean(y_pred, axis=1, keepdims=True)
     centered_y1 = y_true - mu1
     centered_y2 = y_pred - mu2
-    covar_loss = compute_raw_m2_loss(centered_y1, centered_y2, p)
+    covar_loss = compute_co_raw_m2_loss(centered_y1, centered_y2, p)
     return covar_loss
 
 

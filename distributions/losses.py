@@ -1,7 +1,7 @@
 import tensorflow as tf
 from absl import flags
 
-from distributions import compute_wass_dist, compute_raw_m2_loss, compute_covar_loss, compute_mean_loss, \
+from distributions import compute_wass_dist, compute_co_raw_m2_loss, compute_covar_loss, compute_mean_loss, \
     compute_var_loss
 
 FLAGS = flags.FLAGS
@@ -31,9 +31,9 @@ class M1CovarLoss(tf.keras.losses.Loss):
         return mean_loss + covar_loss
 
 
-class RawM2Loss(tf.keras.losses.Loss):
+class CoRawM2Loss(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
-        return compute_raw_m2_loss(y_true, y_pred, p=2)
+        return compute_co_raw_m2_loss(y_true, y_pred, p=2)
 
 
 class WassLoss(tf.keras.losses.Loss):
@@ -41,5 +41,5 @@ class WassLoss(tf.keras.losses.Loss):
         return compute_wass_dist(y_true, y_pred, p=2)
 
 
-loss_dict = {'m1': M1Loss, 'm1_m2': M1M2Loss, 'm1_covar': M1CovarLoss, 'raw_m2': RawM2Loss, 'wass': WassLoss,
+loss_dict = {'m1': M1Loss, 'm1_m2': M1M2Loss, 'm1_covar': M1CovarLoss, 'corawm2': CoRawM2Loss, 'wass': WassLoss,
              None: NoOpLoss}
