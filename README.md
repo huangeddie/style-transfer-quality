@@ -14,7 +14,7 @@ and significantly increase the quality in the mid-level and high-level textures 
 
 ## Comparisons
 ![comparisons](imgs/comparisons.png)
-Current methods of style transfer use second order statistics to match the feature distributions, 
+Current methods of style transfer use second order statistics to match the feature distributions. 
 Such methods include Adaptive Instance Normalization and mean square error of the Gramian matrices.
 
 We propose two methods that significantly improve feature distribution matching, 
