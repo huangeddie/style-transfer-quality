@@ -189,9 +189,10 @@ class SCModel(tf.keras.Model):
 
     def compile(self, disc_opt, gen_opt, *args, **kwargs):
         super().compile(gen_opt, *args, **kwargs)
-        self.disc_opt = disc_opt
-        if self.disc_opt is not None:
+        if disc_opt is not None:
+            self.disc_opt = self._get_optimizer(disc_opt)
             logging.info(f'discriminator optimizer: {disc_opt.__class__.__name__}')
+
         gen_opt = self.optimizer
         logging.info(f'generator optimizer: {gen_opt.__class__.__name__}')
 
