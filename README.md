@@ -13,7 +13,17 @@ We propose two new methods of style transfer that address both of these limitati
 and significantly increase the quality in the mid-level and high-level textures of the style transfer. 
 
 ## Comparisons
-![style representation](imgs/style_rep.png)
+![comparisons](imgs/comparisons.png)
+Current methods of style transfer use second order statistics to match the feature distributions, 
+Such methods include Adaptive Instance Normalization and mean square error of the Gramian matrices.
+
+We propose two methods that significantly improve feature distribution matching, 
+leading to improvements in the mid and high level textures of the style.
+
+The first method defines the style loss as the unmixed Wasserstein distance. 
+The second method defines the style loss dynamically with a neural network discriminator.
+These two methods significantly improve matching the skewnesses (standardized 3rd moment) 
+and covariances of the distributions respectively.  
 
 ## Example usage
 
