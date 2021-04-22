@@ -55,7 +55,7 @@ and significantly increase the quality in the mid-level and high-level textures 
 This code uses Python 3
 
 ### Required packages
-* Tensorflow 2.x
+* Tensorflow w/ Addons
 * Numpy
 * Matplotlib
 * Pillow
