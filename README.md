@@ -1,5 +1,6 @@
 ## About
 Performs style transfer by using a neural network to discriminate between the style image features and the generated image features. Results yield higher quality transfers than contemporary methods.
+
 There is also a PyTorch implementation of this code in the `pytorch` branch. 
 
 ## Style representation comparisons
