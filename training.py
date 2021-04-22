@@ -11,7 +11,7 @@ from distributions import losses, metrics
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_integer('train_steps', 100, 'train steps')
+flags.DEFINE_integer('train_steps', 10000, 'train steps')
 flags.DEFINE_integer('steps_exec', 1, 'steps per execution')
 flags.DEFINE_integer('cowass_warmup', 0, 'warmup steps for the CoWass loss')
 flags.DEFINE_bool('cosine_decay', False, 'cosine decay')
