@@ -13,7 +13,10 @@ FLAGS = flags.FLAGS
 flags.DEFINE_enum('loss', None, ['m1', 'm1_m2', 'm1_covar', 'corawm2', 'wass'],
                   'type of statistical loss to use (optional)')
 flags.DEFINE_integer('loss_warmup', 0, 'linear loss warmup')
-flags.DEFINE_integer('sample_size', None, 'sample size of the features per layer')
+flags.DEFINE_integer('sample_size', None, 'mini-batch sample size of the features per layer. '
+                                          'defaults to using all the features per layer. '
+                                          'if low on memory or want to speed up training, '
+                                          'set this value to something like 1024')
 
 flags.DEFINE_bool('train_metrics', True, 'measure metrics during training')
 

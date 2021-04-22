@@ -12,7 +12,8 @@ flags.DEFINE_string('style_image', None, 'path to the style image')
 flags.DEFINE_string('content_image', None, 'path to the content image')
 flags.DEFINE_integer('imsize', None, 'image size')
 
-flags.DEFINE_enum('strategy', None, ['tpu', 'multi_cpu'], 'distributed strategy')
+flags.DEFINE_enum('strategy', None, ['tpu', 'multi_cpu'], 'distributed strategy. '
+                                                          'multi_cpu is mainly used for debugging purposes.')
 flags.DEFINE_enum('policy', 'float32', ['float32', 'mixed_bfloat16'], 'floating point precision policy')
 
 

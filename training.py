@@ -11,18 +11,19 @@ from distributions import losses, metrics
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_integer('train_steps', 10000, 'train steps')
-flags.DEFINE_integer('steps_exec', 1, 'steps per execution')
-flags.DEFINE_integer('cowass_warmup', 0, 'warmup steps for the CoWass loss')
-flags.DEFINE_bool('cosine_decay', False, 'cosine decay')
+flags.DEFINE_integer('train_steps', 10000, 'number of training steps')
+flags.DEFINE_integer('steps_exec', 1, 'steps per execution. '
+                                      'larger values increases speed but decrease logging frequency. '
+                                      'see the Tensorflow doc for more info')
+flags.DEFINE_bool('cosine_decay', False, 'use the cosine decay learning rate schedule')
 
 flags.DEFINE_integer('verbose', 0, 'verbosity')
 flags.DEFINE_bool('checkpoints', False, 'save transfer image every epoch')
 
 flags.DEFINE_float('disc_lr', 1e-2, 'discriminator learning rate')
-flags.DEFINE_float('gen_lr', 1, 'learning rate')
-flags.DEFINE_float('beta1', 0.9, 'beta1')
-flags.DEFINE_float('beta2', 0.99, 'beta2')
+flags.DEFINE_float('gen_lr', 1, 'generated image learning rate')
+flags.DEFINE_float('beta1', 0.9, 'optimizer first moment parameter')
+flags.DEFINE_float('beta2', 0.99, 'optimizer second moment parameter')
 flags.DEFINE_float('epsilon', 1e-7, 'epsilon')
 
 
@@ -96,12 +97,6 @@ def compile_sc_model(strategy, sc_model, loss_key, with_metrics):
         # Content loss
         if FLAGS.content_image is not None:
             loss_dict['content'] = [tf.keras.losses.MeanSquaredError() for _ in sc_model.feat_model.output['content']]
-
-        # Configure the CoWass loss if any
-        for loss_list in loss_dict.values():
-            for loss in loss_list:
-                if isinstance(loss, losses.CoWassLoss):
-                    loss.warmup_steps.assign(FLAGS.cowass_warmup)
 
         # Learning rate schedule
         if FLAGS.cosine_decay:

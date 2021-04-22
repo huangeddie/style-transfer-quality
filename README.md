@@ -1,13 +1,21 @@
 ## About
 Performs style transfer by using a neural network to discriminate between the style image features and the generated image features. Results yield higher quality transfers than contemporary methods.
 
-There is also a PyTorch implementation of this code in the `pytorch` branch. 
+There is also a PyTorch implementation of this code in the `pytorch` branch.
 
-## Style representation comparisons
+## Abstract
+Style transfer boils down to a distribution matching problem, where the generated image must match the feature 
+distribution of the style image within the same hidden layers of the pretrained model. To that end, we propose using 
+statistical moments as metrics for assessing distribution matching. Current style transfer methods match the feature 
+distributions using second order statistics, which has two major limitations: 1.) they cannot match the third or higher 
+order moments, 2.) they cannot match the non-linear relationships between the dimensions. 
+We propose two new methods of style transfer that address both of these limitations respectively, 
+and significantly increase the quality in the mid-level and high-level textures of the style transfer. 
+
+## Comparisons
 ![style representation](imgs/style_rep.png)
 
 ## Example usage
-See the `main.py` for all argument options.
 
 #### Style representation
 ```python
@@ -40,16 +48,86 @@ This is equivalent to the original method of style transfer, which is the mean s
 * None: No loss is used. This is used when a neural network discriminator is used instead.
 
 ## Style discriminator
-Set `disc_model=mlp` when you want to dynamically define the style loss with a neural network discriminator. 
+Set `disc_model=mlp` when you want to dynamically define the style loss with a neural network discriminator.
 
-## Abstract
-Style transfer boils down to a distribution matching problem, where the generated image must match the feature 
-distribution of the style image within the same hidden layers of the pretrained model. To that end, we propose using 
-statistical moments as metrics for assessing distribution matching. Current style transfer methods match the feature 
-distributions using second order statistics, which has two major limitations: 1.) they cannot match the third or higher 
-order moments, 2.) they cannot match the non-linear relationships between the dimensions. 
-We propose two new methods of style transfer that address both of these limitations respectively, 
-and significantly increase the quality in the mid-level and high-level textures of the style transfer.
+## Flag options
+Run `python run.py --helpfull` to see all flag options. 
+
+```
+run.py:
+  --loss: <m1|m1_m2|m1_covar|corawm2|wass>: type of statistical loss to use
+    (optional)
+  --loss_warmup: linear loss warmup
+    (default: '0')
+    (an integer)
+  --sample_size: mini-batch sample size of the features per layer. defaults to
+    using all the features per layer. if low on memory or want to speed up
+    training, set this value to something like 1024
+    (an integer)
+  --[no]train_metrics: measure metrics during training
+    (default: 'true')
+
+model:
+  --disc_model: <mlp|fast>: discriminator model architecture (optional)
+  --feat_model: <vgg19|nasnetlarge|fast>: feature model architecture
+    (default: 'vgg19')
+  --ica: reduce the feature dimensions with FastICA (optional)
+    (an integer)
+  --layers: number of layers to use from the feature model
+    (default: '5')
+    (an integer)
+  --pca: reduce the feature dimensions with PCA (optional)
+    (an integer)
+  --[no]scale: set the variance of the features to 1 based on the style features
+    (default: 'false')
+  --[no]shift: center the features based on the style features
+    (default: 'false')
+  --start_image: <rand|black>: image initialization
+    (default: 'rand')
+  --[no]whiten: whiten the components of PCA/ICA
+    (default: 'false')
+
+training:
+  --beta1: optimizer first moment parameter
+    (default: '0.9')
+    (a number)
+  --beta2: optimizer second moment parameter
+    (default: '0.99')
+    (a number)
+  --[no]checkpoints: save transfer image every epoch
+    (default: 'false')
+  --[no]cosine_decay: use the cosine decay learning rate schedule
+    (default: 'false')
+  --disc_lr: discriminator learning rate
+    (default: '0.01')
+    (a number)
+  --epsilon: epsilon
+    (default: '1e-07')
+    (a number)
+  --gen_lr: generated image learning rate
+    (default: '1.0')
+    (a number)
+  --steps_exec: steps per execution. larger values increases speed but decrease
+    logging frequency. see the Tensorflow doc for more info
+    (default: '1')
+    (an integer)
+  --train_steps: number of training steps
+    (default: '10000')
+    (an integer)
+  --verbose: verbosity
+    (default: '0')
+    (an integer)
+
+utils:
+  --content_image: path to the content image
+  --imsize: image size
+    (an integer)
+  --policy: <float32|mixed_bfloat16>: floating point precision policy
+    (default: 'float32')
+  --strategy: <tpu|multi_cpu>: distributed strategy. multi_cpu is mainly used
+    for debugging purposes.
+  --style_image: path to the style image
+```
 
 # Requirements
 This code uses Python 3

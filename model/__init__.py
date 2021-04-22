@@ -8,17 +8,17 @@ from model.layers import Preprocess, Standardize, PCA, FastICA
 
 FLAGS = flags.FLAGS
 
-flags.DEFINE_enum('start_image', 'rand', ['rand', 'black'], 'image size')
+flags.DEFINE_enum('start_image', 'rand', ['rand', 'black'], 'image initialization')
 
 flags.DEFINE_enum('feat_model', 'vgg19', ['vgg19', 'nasnetlarge', 'fast'], 'feature model architecture')
 flags.DEFINE_integer('layers', 5, 'number of layers to use from the feature model')
-flags.DEFINE_enum('disc_model', None, ['mlp', 'fast'], 'discriminator model architecture')
+flags.DEFINE_enum('disc_model', None, ['mlp', 'fast'], 'discriminator model architecture (optional)')
 
-flags.DEFINE_bool('shift', False, 'standardize outputs based on the style & content features')
-flags.DEFINE_bool('scale', False, 'standardize outputs based on the style & content features')
+flags.DEFINE_bool('shift', False, 'center the features based on the style features')
+flags.DEFINE_bool('scale', False, 'set the variance of the features to 1 based on the style features')
 
-flags.DEFINE_integer('pca', None, 'maximum dimension of features enforced with PCA')
-flags.DEFINE_integer('ica', None, 'maximum dimension of features enforced with FastICa')
+flags.DEFINE_integer('pca', None, 'reduce the feature dimensions with PCA (optional)')
+flags.DEFINE_integer('ica', None, 'reduce the feature dimensions with FastICA (optional)')
 flags.DEFINE_bool('whiten', False, 'whiten the components of PCA/ICA')
 
 
